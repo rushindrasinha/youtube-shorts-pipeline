@@ -14,7 +14,7 @@ Re-run `python scripts/setup_youtube_oauth.py` to refresh the OAuth token.
 ## ElevenLabs Errors
 
 **`401 Unauthorized`**
-Wrong API key. Check `ELEVENLABS_API_KEY` in openclaw.json.
+Wrong API key. Check `ELEVENLABS_API_KEY` in `~/.youtube-shorts-pipeline/config.json` or your environment variables.
 
 **`403 / blocked`**
 Free tier blocked on server IPs. Must use Pro account ($22/mo).
@@ -33,7 +33,7 @@ File is incomplete or corrupted. Re-download or re-generate the video.
 ## Gemini / Image Generation Errors
 
 **`API key invalid`**
-Check `~/.openclaw/credentials/nanobanana.key` — should be plain text API key only.
+Check `GEMINI_API_KEY` in `~/.youtube-shorts-pipeline/config.json` or your environment variables.
 
 **`RESOURCE_EXHAUSTED`**
 Gemini free tier rate limit. Wait 60 seconds and retry.

@@ -91,7 +91,7 @@ This will:
 - Open a browser for Google sign-in
 - Save the OAuth token to `~/.youtube-shorts-pipeline/youtube_token.json`
 
-Scopes requested: `youtube.upload`, `youtube` (read/write)
+Scopes requested: `youtube.upload`, `youtube.force-ssl` (minimum for upload + captions)
 
 ---
 
@@ -128,11 +128,13 @@ Keys are stored in `~/.youtube-shorts-pipeline/config.json`:
 
 ```json
 {
-  "ANTHROPIC_API_KEY": "sk-ant-...",
-  "ELEVENLABS_API_KEY": "sk_...",
-  "GEMINI_API_KEY": "AIza..."
+  "ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_KEY_HERE",
+  "ELEVENLABS_API_KEY": "YOUR_ELEVENLABS_KEY_HERE",
+  "GEMINI_API_KEY": "YOUR_GEMINI_KEY_HERE"
 }
 ```
+
+> This file is created with `0600` permissions (owner read/write only). It is listed in `.gitignore` and should never be committed to version control.
 
 You can also set any of these as environment variables — they take priority over the config file.
 

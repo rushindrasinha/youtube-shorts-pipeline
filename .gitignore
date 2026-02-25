@@ -1,0 +1,28 @@
+# API keys and credentials
+config.json
+client_secret*.json
+youtube_token.json
+*.key
+
+# Environment files
+.env
+.env.*
+
+# Generated pipeline output
+drafts/
+media/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
