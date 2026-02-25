@@ -14,7 +14,7 @@ Re-run `python scripts/setup_youtube_oauth.py` to refresh the OAuth token.
 ## ElevenLabs Errors
 
 **`401 Unauthorized`**
-Wrong API key. Check `ELEVENLABS_API_KEY` in openclaw.json.
+Wrong API key. Check `ELEVENLABS_API_KEY` in `~/.youtube-shorts-pipeline/config.json` or your environment variables.
 
 **`403 / blocked`**
 Free tier blocked on server IPs. Must use Pro account ($22/mo).
@@ -33,7 +33,7 @@ File is incomplete or corrupted. Re-download or re-generate the video.
 ## Gemini / Image Generation Errors
 
 **`API key invalid`**
-Check `~/.openclaw/credentials/nanobanana.key` — should be plain text API key only.
+Check `GEMINI_API_KEY` in `~/.youtube-shorts-pipeline/config.json` or your environment variables.
 
 **`RESOURCE_EXHAUSTED`**
 Gemini free tier rate limit. Wait 60 seconds and retry.
@@ -49,7 +49,7 @@ Base model on CPU: ~5-7 min per 8 min of audio. Normal. Use `--model small` for 
 ## General
 
 **`ModuleNotFoundError`**
-You're using system Python instead of venv. Always use `~/clawd/.venv/bin/python`, never `python3`.
+Missing dependency. Run `pip install anthropic google-api-python-client google-auth google-auth-oauthlib pillow requests` in your environment.
 
 **Draft JSON not found**
-Drafts are saved to `~/drafts/<timestamp>.json`. Check the timestamp from the draft command output.
+Drafts are saved to `~/.youtube-shorts-pipeline/drafts/<timestamp>.json`. Check the timestamp from the draft command output.

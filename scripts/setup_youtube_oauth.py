@@ -17,12 +17,14 @@ Usage:
 """
 
 import json
+import os
+import stat
 import sys
 from pathlib import Path
 
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.force-ssl",  # needed for captions; narrower than full youtube scope
 ]
 
 SKILL_DIR  = Path.home() / ".youtube-shorts-pipeline"
@@ -62,6 +64,7 @@ def main():
     creds = flow.run_local_server(port=0)
 
     TOKEN_PATH.write_text(creds.to_json())
+    TOKEN_PATH.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 0600: owner read/write only
     print(f"\n✅ Token saved to {TOKEN_PATH}")
     print("\nYou're all set! You can now run the pipeline and upload videos.")
 
