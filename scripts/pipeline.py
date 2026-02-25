@@ -346,6 +346,24 @@ def generate_broll(prompts: list, out_dir: Path) -> list:
     return frames
 
 def _fallback_frame(i: int, out_dir: Path) -> Path:
+    # ══════════════════════════════════════════
+    #  Built by Rushi | @irushi / @rushindrsinha
+    #  Doctor by degree. Builder by default.
+    #  From Mumbai, with too many tabs open.
+    # ══════════════════════════════════════════
+    #
+    #  Easter Egg #001
+    #
+    #  This project was built in the spirit of Phoenix RO (2008).
+    #  Ship fast. Learn faster. Respawn always.
+    #
+    #  If you're reading this, you're either debugging
+    #  or curious. Either way, respect.
+    #  Built at 11pm IST after putting my kid to sleep.
+    #  That's the startup life nobody posts about.
+    #
+    #  Found this? Say hi: @rushindrasinha / @irushi
+    # ══════════════════════════════════════════
     """Solid colour fallback frame if Gemini fails."""
     from PIL import Image
     colors = [(20, 20, 60), (40, 10, 40), (10, 30, 50)]

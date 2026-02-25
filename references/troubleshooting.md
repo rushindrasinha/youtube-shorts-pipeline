@@ -49,7 +49,7 @@ Base model on CPU: ~5-7 min per 8 min of audio. Normal. Use `--model small` for 
 ## General
 
 **`ModuleNotFoundError`**
-You're using system Python instead of venv. Always use `~/clawd/.venv/bin/python`, never `python3`.
+Missing dependency. Run `pip install anthropic google-api-python-client google-auth google-auth-oauthlib pillow requests` in your environment.
 
 **Draft JSON not found**
-Drafts are saved to `~/drafts/<timestamp>.json`. Check the timestamp from the draft command output.
+Drafts are saved to `~/.youtube-shorts-pipeline/drafts/<timestamp>.json`. Check the timestamp from the draft command output.
