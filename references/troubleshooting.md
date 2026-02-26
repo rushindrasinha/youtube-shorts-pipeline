@@ -46,10 +46,38 @@ Known Whisper behaviour — it confuses Hindi and Urdu. Use Whisper for timestam
 **Very slow transcription**
 Base model on CPU: ~5-7 min per 8 min of audio. Normal. Use `--model small` for faster (less accurate) or `--model large` for best accuracy (much slower).
 
+## Captions / ASS Subtitles
+
+**No burned-in captions in output video**
+Check if ffmpeg has libass: `ffmpeg -filters 2>&1 | grep ass`. If missing, the pipeline generates SRT but can't burn in ASS. Reinstall ffmpeg with libass support.
+
+**Whisper word timestamps empty**
+Whisper `word_timestamps=True` requires the Python API (not CLI). Ensure `openai-whisper` is installed: `pip install openai-whisper`.
+
+## Background Music
+
+**No music in output**
+The `music/` directory must contain `.mp3` files. Add royalty-free tracks (e.g. from Pixabay) to `music/` in the project root.
+
+## Topic Engine
+
+**`python -m pipeline topics` returns no results**
+Check `~/.youtube-shorts-pipeline/config.json` has `topic_sources` configured. Reddit and RSS are enabled by default. Google Trends requires `pytrends`: `pip install pytrends`.
+
+## Thumbnail
+
+**Custom thumbnail not showing on YouTube**
+YouTube requires channel phone verification for custom thumbnails. Verify at YouTube Studio > Settings > Channel > Feature eligibility.
+
+## Resume / State
+
+**Pipeline re-runs completed stages**
+Use `--force` only when you want to redo everything. Without it, the pipeline reads `_pipeline_state` from the draft JSON and skips completed stages.
+
 ## General
 
 **`ModuleNotFoundError`**
-Missing dependency. Run `pip install anthropic google-api-python-client google-auth google-auth-oauthlib pillow requests` in your environment.
+Missing dependency. Run `pip install anthropic google-api-python-client google-auth google-auth-oauthlib pillow requests openai-whisper feedparser` in your environment.
 
 **Draft JSON not found**
 Drafts are saved to `~/.youtube-shorts-pipeline/drafts/<timestamp>.json`. Check the timestamp from the draft command output.
