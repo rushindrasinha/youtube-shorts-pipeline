@@ -83,6 +83,86 @@ def get_anthropic_key() -> str:
     return _get_key("ANTHROPIC_API_KEY")
 
 
+# ─────────────────────────────────────────────────────
+# Claude Max OAuth support
+# ─────────────────────────────────────────────────────
+CLAUDE_CREDENTIALS = Path.home() / ".claude" / ".credentials.json"
+
+
+def has_claude_cli() -> bool:
+    """Check if the `claude` CLI is available (Claude Code / Claude Max)."""
+    import shutil
+    return shutil.which("claude") is not None
+
+
+def _has_claude_max_credentials() -> bool:
+    """Check if Claude Max OAuth credentials exist."""
+    if not CLAUDE_CREDENTIALS.exists():
+        return False
+    try:
+        creds = json.loads(CLAUDE_CREDENTIALS.read_text())
+        return bool(creds.get("claudeAiOauth", {}).get("accessToken"))
+    except Exception:
+        return False
+
+
+def call_claude_cli(prompt: str, model: str = "claude-sonnet-4-6", max_tokens: int = 1500) -> str:
+    """Call Claude via the `claude` CLI (uses Claude Max subscription).
+
+    Uses `claude -p <prompt> --model <model>` for non-interactive mode.
+    No API key needed — uses Claude Max auth.
+    """
+    import shutil
+    claude_path = shutil.which("claude")
+    if not claude_path:
+        raise RuntimeError("claude CLI not found. Install Claude Code or set ANTHROPIC_API_KEY.")
+
+    # Strip CLAUDECODE env var to allow running from within a Claude Code session
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+
+    r = subprocess.run(
+        [claude_path, "--print", "--model", model, "--max-turns", "1", "-p", prompt],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        env=env,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"claude CLI failed: {r.stderr[:300]}")
+    return r.stdout.strip()
+
+
+def get_anthropic_client():
+    """Create an Anthropic client if an API key is available.
+
+    Returns the client, or None if no API key (caller should use call_claude_cli).
+    """
+    import anthropic
+
+    api_key = get_anthropic_key()
+    if api_key:
+        return anthropic.Anthropic(api_key=api_key)
+
+    return None
+
+
+def get_claude_backend() -> str:
+    """Determine which Claude backend to use.
+
+    Returns: "api" if ANTHROPIC_API_KEY is set, "cli" if claude CLI is available.
+    Raises RuntimeError if neither is available.
+    """
+    if get_anthropic_key():
+        return "api"
+    if has_claude_cli() and _has_claude_max_credentials():
+        return "cli"
+    raise RuntimeError(
+        "No Claude access found. Either:\n"
+        "  1. Set ANTHROPIC_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
+        "  2. Log in to Claude Code (claude login) with a Claude Max subscription"
+    )
+
+
 def get_elevenlabs_key() -> str:
     return _get_key("ELEVENLABS_API_KEY")
 

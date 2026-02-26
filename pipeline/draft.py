@@ -2,7 +2,7 @@
 
 import json
 
-from .config import get_anthropic_key
+from .config import get_anthropic_client, get_claude_backend, call_claude_cli
 from .log import log
 from .research import research_topic
 from .retry import with_retry
@@ -10,15 +10,25 @@ from .retry import with_retry
 
 @with_retry(max_retries=2, base_delay=3.0)
 def _call_claude(prompt: str) -> str:
-    """Call Claude API and return raw text response."""
-    import anthropic
-    client = anthropic.Anthropic(api_key=get_anthropic_key())
-    msg = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1500,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return msg.content[0].text.strip()
+    """Call Claude via API key or CLI (Claude Max).
+
+    Uses ANTHROPIC_API_KEY if set, otherwise falls back to `claude` CLI
+    which uses Claude Max subscription auth.
+    """
+    backend = get_claude_backend()
+
+    if backend == "api":
+        client = get_anthropic_client()
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text.strip()
+    else:
+        # Claude Max via CLI
+        log("Using Claude Max (CLI) for script generation...")
+        return call_claude_cli(prompt)
 
 
 def generate_draft(news: str, channel_context: str = "") -> dict:

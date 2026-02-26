@@ -2,7 +2,7 @@
 
 import concurrent.futures
 
-from ..config import load_config, get_anthropic_key
+from ..config import load_config, get_anthropic_client, get_claude_backend, call_claude_cli
 from ..log import log
 from .base import TopicCandidate
 
@@ -84,25 +84,26 @@ class TopicEngine:
 
     def auto_pick(self, candidates: list[TopicCandidate]) -> str:
         """Use Claude to pick the best topic for a YouTube Short."""
-        import anthropic
-
         topics_text = "\n".join(
             f"{i+1}. [{t.source}] {t.title} (score: {t.trending_score:.2f})"
             for i, t in enumerate(candidates[:20])
         )
 
-        client = anthropic.Anthropic(api_key=get_anthropic_key())
-        msg = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=200,
-            messages=[{
-                "role": "user",
-                "content": f"""Pick the single best topic from this list for a viral YouTube Short (60-90 sec).
+        prompt = f"""Pick the single best topic from this list for a viral YouTube Short (60-90 sec).
 Consider: visual potential, broad appeal, timeliness, controversy/surprise factor.
 
 {topics_text}
 
 Reply with ONLY the topic title text, nothing else."""
-            }],
-        )
-        return msg.content[0].text.strip()
+
+        backend = get_claude_backend()
+        if backend == "api":
+            client = get_anthropic_client()
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return msg.content[0].text.strip()
+        else:
+            return call_claude_cli(prompt, max_tokens=200)
