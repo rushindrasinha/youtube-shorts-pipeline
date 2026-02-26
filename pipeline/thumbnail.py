@@ -16,18 +16,18 @@ THUMB_HEIGHT = 720
 
 @with_retry(max_retries=3, base_delay=2.0)
 def _generate_thumb_image(prompt: str, output_path: Path, api_key: str):
-    """Generate a 16:9 thumbnail via Gemini Imagen."""
+    """Generate a 16:9 thumbnail via Gemini native image generation."""
     url = (
         "https://generativelanguage.googleapis.com/v1beta"
-        "/models/imagen-3.0-generate-002:predict"
+        "/models/gemini-2.0-flash-exp-image-generation:generateContent"
     )
     body = {
-        "instances": [{"prompt": prompt}],
-        "parameters": {"sampleCount": 1, "aspectRatio": "16:9"},
+        "contents": [{"parts": [{"text": f"Generate a 16:9 landscape image: {prompt}"}]}],
+        "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
     }
     r = requests.post(
-        url, json=body, timeout=60,
-        headers={"x-goog-api-key": api_key},
+        url, json=body, timeout=90,
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
     )
     if r.status_code != 200:
         try:
@@ -37,8 +37,12 @@ def _generate_thumb_image(prompt: str, output_path: Path, api_key: str):
         raise RuntimeError(f"Gemini API {r.status_code}: {detail}")
 
     data = r.json()
-    img_b64 = data["predictions"][0]["bytesBase64Encoded"]
-    output_path.write_bytes(base64.b64decode(img_b64))
+    for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+        if "inlineData" in part:
+            img_b64 = part["inlineData"]["data"]
+            output_path.write_bytes(base64.b64decode(img_b64))
+            return
+    raise RuntimeError("No image in Gemini response")
 
 
 def _overlay_title(image_path: Path, title: str, output_path: Path):

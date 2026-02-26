@@ -121,7 +121,7 @@ def call_claude_cli(prompt: str, model: str = "claude-sonnet-4-6", max_tokens: i
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
 
     r = subprocess.run(
-        [claude_path, "--print", "--model", model, "--max-turns", "1", "-p", prompt],
+        [claude_path, "--print", "--model", model, "--max-turns", "3", "-p", prompt],
         capture_output=True,
         text=True,
         timeout=120,
@@ -129,7 +129,11 @@ def call_claude_cli(prompt: str, model: str = "claude-sonnet-4-6", max_tokens: i
     )
     if r.returncode != 0:
         raise RuntimeError(f"claude CLI failed: {r.stderr[:300]}")
-    return r.stdout.strip()
+    output = r.stdout.strip()
+    # Claude CLI may append "Error: Reached max turns" — strip it
+    if output.endswith("Error: Reached max turns (3)"):
+        output = output[: -len("Error: Reached max turns (3)")].strip()
+    return output
 
 
 def get_anthropic_client():

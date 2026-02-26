@@ -13,18 +13,18 @@ from .retry import with_retry
 
 @with_retry(max_retries=3, base_delay=2.0)
 def _generate_image_gemini(prompt: str, output_path: Path, api_key: str):
-    """Call Google Gemini Imagen API directly and save PNG to output_path."""
+    """Generate image via Gemini native image generation (free tier compatible)."""
     url = (
         "https://generativelanguage.googleapis.com/v1beta"
-        "/models/imagen-3.0-generate-002:predict"
+        "/models/gemini-2.0-flash-exp-image-generation:generateContent"
     )
     body = {
-        "instances": [{"prompt": prompt}],
-        "parameters": {"sampleCount": 1, "aspectRatio": "9:16"},
+        "contents": [{"parts": [{"text": f"Generate an image: {prompt}"}]}],
+        "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
     }
     r = requests.post(
-        url, json=body, timeout=60,
-        headers={"x-goog-api-key": api_key},
+        url, json=body, timeout=90,
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
     )
     if r.status_code != 200:
         try:
@@ -33,8 +33,13 @@ def _generate_image_gemini(prompt: str, output_path: Path, api_key: str):
             detail = r.text[:200]
         raise RuntimeError(f"Gemini API {r.status_code}: {detail}")
     data = r.json()
-    img_b64 = data["predictions"][0]["bytesBase64Encoded"]
-    output_path.write_bytes(base64.b64decode(img_b64))
+    # Extract image from response parts
+    for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+        if "inlineData" in part:
+            img_b64 = part["inlineData"]["data"]
+            output_path.write_bytes(base64.b64decode(img_b64))
+            return
+    raise RuntimeError("No image in Gemini response")
 
 
 def _fallback_frame(i: int, out_dir: Path) -> Path:
