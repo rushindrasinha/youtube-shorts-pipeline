@@ -25,6 +25,8 @@ First run will trigger an interactive setup wizard to configure API keys and You
 Config stored in ~/.youtube-shorts-pipeline/config.json
 """
 
+__version__ = "1.1.0"
+
 import argparse, base64, json, os, stat, subprocess, sys, time
 from pathlib import Path
 import requests
@@ -154,9 +156,15 @@ STOPWORDS = {
 # Utilities
 # ─────────────────────────────────────────────────────
 def _write_secret_file(path: Path, content: str):
-    """Write a file with 0600 permissions (owner read/write only)."""
-    path.write_text(content)
-    path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    """Write a file with 0600 permissions (owner read/write only).
+
+    Uses os.open() with explicit mode to avoid a TOCTOU race where the file
+    briefly exists with default (world-readable) permissions.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
 
 def log(msg: str):
     print(f"  {msg}", flush=True)
@@ -500,7 +508,10 @@ def assemble_video(frames: list, voiceover: Path, out_dir: Path, job_id: str, la
 
     # Concat list
     concat_file = out_dir / "concat.txt"
-    concat_file.write_text("\n".join(f"file '{p}'" for p in animated))
+    # Escape single quotes for ffmpeg concat demuxer syntax
+    def _esc(p):
+        return str(p).replace("'", "'\\''" )
+    concat_file.write_text("\n".join(f"file '{_esc(p)}'" for p in animated))
 
     # Merge video + audio
     merged_video = out_dir / "merged_video.mp4"
@@ -531,9 +542,15 @@ def upload_to_youtube(video_path: Path, draft: dict, srt_path: Path = None, lang
 
     token_path = get_youtube_token_path()
     creds = Credentials.from_authorized_user_file(str(token_path))
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        _write_secret_file(token_path, creds.to_json())
+    if creds.expired:
+        if creds.refresh_token:
+            creds.refresh(Request())
+            _write_secret_file(token_path, creds.to_json())
+        else:
+            raise RuntimeError(
+                "YouTube OAuth token is expired and has no refresh token.\n"
+                "Re-run: python3 scripts/setup_youtube_oauth.py"
+            )
 
     youtube = build("youtube", "v3", credentials=creds)
     log(f"Uploading {video_path.name}...")
