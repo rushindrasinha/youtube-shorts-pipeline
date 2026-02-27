@@ -1,105 +1,99 @@
 ---
 name: youtube-shorts-pipeline
-description: "Fully automated YouTube Shorts production pipeline. Takes a one-line news item or topic and outputs a finished, uploaded YouTube Short — complete with AI-generated b-roll visuals (Gemini Imagen), professional voiceover (ElevenLabs), SRT captions in English and Hindi, and direct YouTube upload via OAuth. Anti-hallucination research gate built in. Use when asked to create a YouTube Short, produce a news short, automate video content, run the content pipeline, draft/produce/upload a short-form video, or generate a faceless YouTube channel video."
+description: "Fully automated YouTube Shorts production pipeline v2. Takes a one-line news item or topic and outputs a finished, uploaded YouTube Short — with AI-generated b-roll (Gemini Imagen), professional voiceover (ElevenLabs), burned-in word-by-word captions (Whisper + ASS), background music with voice-ducking, AI thumbnail, and direct YouTube upload. Includes multi-source trending topic discovery (Reddit, RSS, Google Trends), resume capability, retry logic, and structured logging. Use when asked to create a YouTube Short, produce a news short, discover trending topics, or run the content pipeline."
 ---
 
-# YouTube Shorts Pipeline
+# YouTube Shorts Pipeline v2
 
-Fully automated pipeline: news headline → research → script → AI visuals → voiceover → captions → upload.
+Fully automated: news headline -> research -> script -> AI visuals -> voiceover -> captions -> music -> thumbnail -> upload.
 
-> **First run triggers an automatic setup wizard** — just run any command and you'll be guided through API key configuration and YouTube OAuth.
+> **First run triggers an automatic setup wizard** — just run any command.
 
 ## What it does
 
-1. **Draft** — Researches topic via DuckDuckGo, writes Claude script, generates Gemini image prompts, YouTube description, Instagram caption, thumbnail prompt
-2. **Produce** — Gemini Imagen generates 3 b-roll frames (Ken Burns animation), ElevenLabs synthesises voiceover, ffmpeg assembles final video with captions
-3. **Upload** — Pushes to YouTube with title, description, tags, and SRT caption tracks (EN + HI)
+1. **Draft** — Researches topic via DuckDuckGo, Claude writes script, generates b-roll/thumbnail prompts + YouTube metadata
+2. **Produce** — Gemini Imagen b-roll (Ken Burns) + ElevenLabs voiceover + Whisper word-level captions (ASS burn-in) + background music (auto-ducking) + ffmpeg assembly
+3. **Upload** — YouTube upload with metadata + SRT captions + AI thumbnail
 
 ## Setup (one-time)
 
-See `references/setup.md` for full instructions.
+On first run, the pipeline prompts for:
+- `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `ELEVENLABS_API_KEY` (optional)
 
-On **first run**, the pipeline automatically prompts for:
-- `ANTHROPIC_API_KEY` — Claude script generation
-- `ELEVENLABS_API_KEY` — voiceover (optional; macOS `say` fallback available)
-- `GEMINI_API_KEY` — AI b-roll image generation
+Config: `~/.youtube-shorts-pipeline/config.json`
 
-Config saved to: `~/.youtube-shorts-pipeline/config.json`
-
-Required binaries:
+Required:
 ```bash
-# macOS
 brew install ffmpeg
-pip install openai-whisper
-
-# Linux
-apt install ffmpeg
-pip install openai-whisper
-```
-
-Required Python packages:
-```bash
 pip install anthropic google-api-python-client google-auth google-auth-oauthlib \
-            pillow requests
+            pillow requests openai-whisper feedparser
 ```
 
 ## Commands
 
-> Replace `{skillDir}` with the path where you extracted this skill.
-
-### Draft only
+### Draft
 ```bash
-python3 {skillDir}/scripts/pipeline.py draft --news "your news headline here"
+python -m pipeline draft --news "headline"
+python -m pipeline draft --discover              # trending topics
+python -m pipeline draft --discover --auto-pick   # Claude picks
 ```
 
-### Produce from draft
+### Produce
 ```bash
-python3 {skillDir}/scripts/pipeline.py produce --draft ~/.youtube-shorts-pipeline/drafts/<id>.json --lang en
-python3 {skillDir}/scripts/pipeline.py produce --draft ~/.youtube-shorts-pipeline/drafts/<id>.json --lang hi
+python -m pipeline produce --draft ~/.youtube-shorts-pipeline/drafts/<id>.json [--lang en|hi] [--force]
 ```
 
 ### Upload
 ```bash
-python3 {skillDir}/scripts/pipeline.py upload --draft ~/.youtube-shorts-pipeline/drafts/<id>.json --lang en
-python3 {skillDir}/scripts/pipeline.py upload --draft ~/.youtube-shorts-pipeline/drafts/<id>.json --lang hi
+python -m pipeline upload --draft <path> [--lang en|hi]
 ```
 
-### Full auto (draft → produce → upload)
+### Full auto
 ```bash
-python3 {skillDir}/scripts/pipeline.py run --news "your news headline here"
+python -m pipeline run --news "headline" [--dry-run]
+python -m pipeline run --discover --auto-pick
 ```
 
-### Dry run (draft only, no video/upload)
+### Discover trending topics
 ```bash
-python3 {skillDir}/scripts/pipeline.py run --news "your news headline here" --dry-run
+python -m pipeline topics [--limit 20]
 ```
+
+## Features
+
+- **Burned-in captions**: Word-by-word yellow highlight via ASS subtitles (Whisper word timestamps)
+- **Background music**: Bundled royalty-free tracks, auto-ducking during speech
+- **Topic engine**: Reddit, RSS, Google Trends, Twitter, TikTok sources with parallel fetch
+- **Thumbnails**: Gemini Imagen (16:9) + Pillow title overlay
+- **Resume**: Re-runs skip completed stages; `--force` to redo
+- **Retry**: Exponential backoff on all API calls
+- **Logging**: `~/.youtube-shorts-pipeline/logs/`, `--verbose` for debug
 
 ## Key Rules
 
-- **Anti-hallucination**: Claude ONLY uses names/facts found in live DuckDuckGo research. Never fabricates player names, scores, or events.
-- **Hindi**: Always native Hinglish writing, never translation. Fresh script for Hindi-speaking Indian audience.
-- **Whisper + Hindi**: Whisper outputs Urdu script for Hindi audio — use Whisper timings + manually write Devanagari SRT.
-- **YouTube quota**: `uploadLimitExceeded` = daily cap hit. Wait 24h.
+- **Anti-hallucination**: Claude ONLY uses names/facts from live DuckDuckGo research
+- **Hindi**: Native Hinglish writing, never translation
+- **YouTube quota**: `uploadLimitExceeded` = daily cap hit, wait 24h
+
+## Topic Source Config
+
+```json
+{
+  "topic_sources": {
+    "reddit": {"enabled": true, "subreddits": ["technology", "worldnews"]},
+    "rss": {"enabled": true, "feeds": ["https://hnrss.org/frontpage"]},
+    "google_trends": {"enabled": true, "geo": "IN"}
+  }
+}
+```
 
 ## File locations
 
 - Config: `~/.youtube-shorts-pipeline/config.json`
 - Drafts: `~/.youtube-shorts-pipeline/drafts/<timestamp>.json`
 - Videos: `~/.youtube-shorts-pipeline/media/pipeline_<id>_<lang>.mp4`
-- SRTs: `~/.youtube-shorts-pipeline/media/pipeline_<id>_<lang>.srt`
-
-## Voice IDs (ElevenLabs)
-
-- English VO: `JBFqnCBsd6RMkjVDRZzb` (George — deep, authoritative)
-- Override via env: `VOICE_ID_EN=<id>` or `VOICE_ID_HI=<id>`
-
-## Customising
-
-- **Channel topic**: Pass any news item — esports, tech, finance, sports, politics
-- **Language**: `--lang en` or `--lang hi` (or extend for any ElevenLabs-supported language)
-- **B-roll style**: Edit image prompts in draft JSON before producing
-- **Script edits**: Pass `--script "edited script"` to produce command to override Claude's draft
+- Logs: `~/.youtube-shorts-pipeline/logs/pipeline_YYYYMMDD.log`
 
 ## Troubleshooting
 
-See `references/troubleshooting.md` for common errors and fixes.
+See `references/troubleshooting.md`.
