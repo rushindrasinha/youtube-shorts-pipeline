@@ -1,5 +1,7 @@
 # YouTube Shorts Pipeline v2
 
+**v2.1.0** — [Changelog](CHANGELOG.md)
+
 > Turn a one-line topic into a published YouTube Short in minutes.
 > Fully automated: **research -> script -> AI visuals -> voiceover -> captions -> music -> upload.**
 
@@ -34,8 +36,7 @@
 
 **1. Install dependencies**
 ```bash
-pip install anthropic google-api-python-client google-auth google-auth-oauthlib \
-            pillow requests openai-whisper feedparser
+pip install -r requirements.txt
 ```
 
 **2. Run the pipeline (setup wizard launches on first run)**
@@ -191,6 +192,22 @@ python -m pytest tests/ -v
 ## Troubleshooting
 
 See [`references/troubleshooting.md`](references/troubleshooting.md).
+
+---
+
+## Security
+
+This pipeline handles API keys and OAuth tokens. The following measures are in place:
+
+- **Credential storage:** `config.json` and `youtube_token.json` are created atomically with `0600` permissions (owner-only) via `os.open()` — no window where the file is world-readable. Never commit these files — they are covered by `.gitignore`.
+- **API key transmission:** The Gemini API key is sent via the `x-goog-api-key` header, not as a URL query parameter, so it won't leak into logs or error messages.
+- **Error handling:** API error messages are sanitized to never include credentials.
+- **Upload privacy:** Videos are uploaded as **private** by default. Change to `public` or `unlisted` manually on YouTube when ready.
+- **OAuth scope:** YouTube OAuth requests the minimum scopes needed (`youtube.upload` + `youtube.force-ssl`), not full account access.
+- **Token expiry:** Expired tokens with no refresh token produce a clear error message directing you to re-run the OAuth setup.
+- **Prompt injection mitigation:** Search result snippets injected into the Claude prompt are truncated and wrapped in boundary markers to reduce prompt injection risk.
+- **LLM output validation:** Fields returned by Claude are type-checked before use in metadata and file operations.
+- **Dependency pinning:** `requirements.txt` pins all dependencies with compatible-release bounds to reduce supply-chain risk.
 
 ---
 

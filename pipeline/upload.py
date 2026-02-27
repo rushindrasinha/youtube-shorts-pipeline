@@ -23,9 +23,15 @@ def upload_to_youtube(
 
     token_path = get_youtube_token_path()
     creds = Credentials.from_authorized_user_file(str(token_path))
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        write_secret_file(token_path, creds.to_json())
+    if creds.expired:
+        if creds.refresh_token:
+            creds.refresh(Request())
+            write_secret_file(token_path, creds.to_json())
+        else:
+            raise RuntimeError(
+                "YouTube OAuth token is expired and has no refresh token.\n"
+                "Re-run: python3 scripts/setup_youtube_oauth.py"
+            )
 
     youtube = build("youtube", "v3", credentials=creds)
     log(f"Uploading {video_path.name}...")

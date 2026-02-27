@@ -1,18 +1,18 @@
 [project]
 name = "youtube-shorts-pipeline"
-version = "2.0.0"
+version = "2.1.0"
 description = "AI-native YouTube Shorts production pipeline"
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = [
-    "anthropic",
-    "requests",
-    "pillow",
-    "google-api-python-client",
-    "google-auth",
-    "google-auth-oauthlib",
-    "openai-whisper",
-    "feedparser",
+    "anthropic>=0.39.0,<1.0",
+    "requests>=2.31.0,<3.0",
+    "pillow>=10.0.0,<12.0",
+    "google-api-python-client>=2.100.0,<3.0",
+    "google-auth>=2.23.0,<3.0",
+    "google-auth-oauthlib>=1.1.0,<2.0",
+    "openai-whisper>=20231117",
+    "feedparser>=6.0.0,<7.0",
 ]
 
 [project.optional-dependencies]

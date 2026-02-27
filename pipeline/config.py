@@ -41,9 +41,15 @@ STOPWORDS = {
 # Utilities
 # ─────────────────────────────────────────────────────
 def write_secret_file(path: Path, content: str):
-    """Write a file with 0600 permissions (owner read/write only)."""
-    path.write_text(content)
-    path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    """Write a file with 0600 permissions (owner read/write only).
+
+    Uses os.open() with explicit mode to avoid a TOCTOU race where the file
+    briefly exists with default (world-readable) permissions.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(content)
 
 
 def run_cmd(cmd, check=True, capture=False, **kwargs):

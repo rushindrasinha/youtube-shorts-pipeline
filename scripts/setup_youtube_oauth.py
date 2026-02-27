@@ -63,8 +63,9 @@ def main():
     flow = InstalledAppFlow.from_client_secrets_file(client_secrets, SCOPES)
     creds = flow.run_local_server(port=0)
 
-    TOKEN_PATH.write_text(creds.to_json())
-    TOKEN_PATH.chmod(stat.S_IRUSR | stat.S_IWUSR)  # 0600: owner read/write only
+    fd = os.open(str(TOKEN_PATH), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(creds.to_json())
     print(f"\n✅ Token saved to {TOKEN_PATH}")
     print("\nYou're all set! You can now run the pipeline and upload videos.")
 

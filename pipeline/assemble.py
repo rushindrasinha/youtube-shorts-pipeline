@@ -40,9 +40,11 @@ def assemble_video(
         animate_frame(frame, anim, per_frame + 0.1, effects[i % len(effects)])
         animated.append(anim)
 
-    # Concat animated segments
+    # Concat animated segments (escape single quotes for ffmpeg concat demuxer)
     concat_file = out_dir / "concat.txt"
-    concat_file.write_text("\n".join(f"file '{p}'" for p in animated))
+    def _esc(p):
+        return str(p).replace("'", "'\\''" )
+    concat_file.write_text("\n".join(f"file '{_esc(p)}'" for p in animated))
 
     merged_video = out_dir / "merged_video.mp4"
     run_cmd([
