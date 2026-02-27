@@ -1,0 +1,27 @@
+[project]
+name = "youtube-shorts-pipeline"
+version = "2.0.0"
+description = "AI-native YouTube Shorts production pipeline"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "anthropic",
+    "requests",
+    "pillow",
+    "google-api-python-client",
+    "google-auth",
+    "google-auth-oauthlib",
+    "openai-whisper",
+    "feedparser",
+]
+
+[project.optional-dependencies]
+trends = ["pytrends"]
+dev = ["pytest", "pytest-mock"]
+
+[project.scripts]
+yt-shorts = "pipeline.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
