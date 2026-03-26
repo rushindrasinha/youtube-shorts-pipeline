@@ -1,6 +1,6 @@
-"""Basic usage tracking — full billing comes in Phase 2."""
+"""Usage tracking with plan limit checking and overage billing."""
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -17,11 +17,25 @@ def check_can_create_job(db: Session, user) -> tuple[bool, str]:
     """Check whether the user can create a new job this billing period.
 
     Returns (allowed, reason_if_denied).
+    For paid tiers with overage_cents > 0, overage is allowed.
+    For free tier, it's a hard limit.
     """
-    # Determine the user's video limit
+    sub = (
+        db.query(Subscription)
+        .filter(Subscription.user_id == user.id)
+        .first()
+    )
+
+    plan = None
     videos_limit = FREE_TIER_VIDEOS_PER_MONTH
-    if user.subscription and user.subscription.plan:
-        videos_limit = user.subscription.plan.videos_per_month
+
+    if sub and sub.plan:
+        plan = sub.plan
+        videos_limit = plan.videos_per_month
+
+    # Unlimited plans
+    if videos_limit == -1:
+        return True, ""
 
     # Count jobs created this calendar month
     now = datetime.now(timezone.utc)
@@ -38,6 +52,9 @@ def check_can_create_job(db: Session, user) -> tuple[bool, str]:
     )
 
     if jobs_this_month >= videos_limit:
+        # Check if plan supports overage (paid tiers)
+        if plan and plan.overage_cents > 0:
+            return True, "overage"
         return False, (
             f"You have used all {videos_limit} videos for this billing period. "
             f"Upgrade your plan or wait until next month."
@@ -47,7 +64,10 @@ def check_can_create_job(db: Session, user) -> tuple[bool, str]:
 
 
 def increment_usage(db: Session, user, cost_usd: float = 0.0) -> None:
-    """Increment the user's monthly usage counter."""
+    """Increment the user's monthly usage counter.
+
+    Tracks overage and reports to Stripe for metered billing on paid plans.
+    """
     now = datetime.now(timezone.utc)
     period_start = now.replace(day=1).date()
 
@@ -57,10 +77,12 @@ def increment_usage(db: Session, user, cost_usd: float = 0.0) -> None:
     else:
         period_end = date(now.year, now.month + 1, 1)
 
-    # Determine limit
+    # Determine limit from plan
     videos_limit = FREE_TIER_VIDEOS_PER_MONTH
+    plan = None
     if user.subscription and user.subscription.plan:
-        videos_limit = user.subscription.plan.videos_per_month
+        plan = user.subscription.plan
+        videos_limit = plan.videos_per_month
 
     # Upsert usage record
     usage = (
@@ -84,4 +106,22 @@ def increment_usage(db: Session, user, cost_usd: float = 0.0) -> None:
 
     usage.videos_created += 1
     usage.total_api_cost += cost_usd
+
+    # Track overage and report to Stripe for metered billing
+    if (
+        plan
+        and plan.overage_cents > 0
+        and videos_limit > 0
+        and usage.videos_created > videos_limit
+    ):
+        usage.overage_count += 1
+
+        # Report metered usage to Stripe
+        from .billing_service import BillingService
+
+        try:
+            BillingService(db).record_usage(user, quantity=1)
+        except Exception:
+            pass  # Don't fail the job if Stripe reporting fails
+
     db.commit()
