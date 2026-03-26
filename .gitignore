@@ -6,24 +6,45 @@ youtube_token.json
 
 # Environment files
 .env
+.env.local
+.env.*.local
 .env.*
+!.env.example
 
 # Generated pipeline output
 drafts/
 media/
 logs/
 
+# Node / Turborepo
+node_modules/
+.next/
+.turbo/
+dist/
+.vercel/
+
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
-dist/
 build/
 .venv/
 venv/
+
+# Testing
 .pytest_cache/
+coverage/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Alembic auto-generated (track manually)
+# apps/api/migrations/versions/*.py is tracked

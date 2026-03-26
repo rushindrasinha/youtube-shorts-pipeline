@@ -1,0 +1,24 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libass-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-saas.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r requirements-saas.txt
+
+# Pre-download faster-whisper model during build (cached in image)
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base', compute_type='int8')" || true
+
+COPY pipeline/ ./pipeline/
+COPY apps/api/saas/ ./saas/
+COPY music/ ./music/
+
+RUN useradd -m appuser && mkdir -p /tmp/shortfactory && chown -R appuser:appuser /app /tmp/shortfactory
+USER appuser
+
+CMD ["celery", "-A", "saas.workers.celery_app", "worker", "-Q", "video,video_priority", "-c", "2", "--loglevel=info"]
