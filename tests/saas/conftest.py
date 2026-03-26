@@ -27,7 +27,10 @@ def engine():
     def _compile_array_sqlite(type_, compiler, **kw):
         return "TEXT"
 
-    eng = create_engine("sqlite:///:memory:")
+    eng = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+    )
 
     # Enable foreign key enforcement in SQLite
     @event.listens_for(eng, "connect")
