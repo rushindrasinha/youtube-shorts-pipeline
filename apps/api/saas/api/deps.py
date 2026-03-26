@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime, timezone
 from typing import Generator
+from uuid import UUID
 
 import jwt
 from fastapi import Cookie, Depends, Header, HTTPException, Request
@@ -62,7 +63,8 @@ async def get_current_user(
             payload = verify_token(token)
             if payload.get("type") != "access":
                 raise HTTPException(status_code=401, detail="Invalid token type")
-            user = db.query(User).filter(User.id == payload["sub"]).first()
+            user_id = UUID(payload["sub"])
+            user = db.query(User).filter(User.id == user_id).first()
             if user and user.is_active:
                 return user
             raise HTTPException(status_code=401, detail="User not found or inactive")

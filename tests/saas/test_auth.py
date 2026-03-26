@@ -6,7 +6,33 @@ import pytest
 # Add apps/api to path so saas package is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "apps", "api"))
 
-from tests.saas.conftest import create_test_user
+
+def _create_test_user(db_session, email="test@example.com", password="testpassword123"):
+    """Helper to create a test user directly in the DB."""
+    from saas.models.user import User
+    from saas.models.subscription import Plan, Subscription
+    from saas.services.auth_service import hash_password
+
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        display_name="Test User",
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    free_plan = db_session.query(Plan).filter(Plan.name == "free").first()
+    if free_plan:
+        sub = Subscription(
+            user_id=user.id,
+            plan_id=free_plan.id,
+            status="active",
+        )
+        db_session.add(sub)
+
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
 class TestRegister:
@@ -39,7 +65,7 @@ class TestRegister:
 
     def test_register_duplicate_email(self, client, db_session):
         """Registering with an existing email returns 409."""
-        create_test_user(db_session, email="dupe@example.com")
+        _create_test_user(db_session, email="dupe@example.com")
 
         response = client.post(
             "/api/v1/auth/register",
@@ -98,7 +124,7 @@ class TestLogin:
 
     def test_login_success(self, client, db_session):
         """Login with valid credentials returns 200 and sets cookies."""
-        create_test_user(db_session, email="login@example.com", password="correctpassword")
+        _create_test_user(db_session, email="login@example.com", password="correctpassword")
 
         response = client.post(
             "/api/v1/auth/login",
@@ -118,7 +144,7 @@ class TestLogin:
 
     def test_login_wrong_password(self, client, db_session):
         """Login with wrong password returns 401."""
-        create_test_user(db_session, email="wrongpw@example.com", password="correctpassword")
+        _create_test_user(db_session, email="wrongpw@example.com", password="correctpassword")
 
         response = client.post(
             "/api/v1/auth/login",
@@ -147,7 +173,7 @@ class TestGetMe:
 
     def test_get_me_authenticated(self, client, db_session):
         """GET /users/me with valid JWT returns user data."""
-        create_test_user(db_session, email="me@example.com", password="testpassword123")
+        _create_test_user(db_session, email="me@example.com", password="testpassword123")
 
         # Login to get cookies
         login_resp = client.post(
@@ -190,7 +216,7 @@ class TestUpdateMe:
 
     def test_update_me(self, client, db_session):
         """PATCH /users/me updates allowed fields."""
-        create_test_user(db_session, email="update@example.com", password="testpassword123")
+        _create_test_user(db_session, email="update@example.com", password="testpassword123")
 
         login_resp = client.post(
             "/api/v1/auth/login",
@@ -226,7 +252,7 @@ class TestRefresh:
 
     def test_refresh_with_valid_token(self, client, db_session):
         """POST /auth/refresh with valid refresh token rotates tokens."""
-        create_test_user(db_session, email="refresh@example.com", password="testpassword123")
+        _create_test_user(db_session, email="refresh@example.com", password="testpassword123")
 
         # Login to get tokens
         login_resp = client.post(

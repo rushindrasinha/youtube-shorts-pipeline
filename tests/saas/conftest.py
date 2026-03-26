@@ -20,6 +20,8 @@ def engine():
     Registers a custom compilation rule so PostgreSQL ARRAY columns
     render as TEXT in SQLite (which lacks native array support).
     """
+    import sqlite3
+    from uuid import UUID as PyUUID
     from sqlalchemy.dialects.postgresql import ARRAY
     from sqlalchemy.ext.compiler import compiles
 
@@ -27,9 +29,17 @@ def engine():
     def _compile_array_sqlite(type_, compiler, **kw):
         return "TEXT"
 
+    # Register sqlite3 adapters so UUID objects are stored/retrieved as strings
+    sqlite3.register_adapter(PyUUID, lambda u: str(u))
+    sqlite3.register_converter("UUID", lambda b: b.decode())
+    sqlite3.register_converter("CHAR", lambda b: b.decode())
+
+    from sqlalchemy.pool import StaticPool
+
     eng = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
 
     # Enable foreign key enforcement in SQLite
