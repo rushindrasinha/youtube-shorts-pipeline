@@ -2,6 +2,7 @@ import sys
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker
 
@@ -9,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "apps", "api"))
 
 from saas.models import Base
+from saas.models.subscription import Plan
 
 
 @pytest.fixture(scope="function")
@@ -69,3 +71,74 @@ def session(engine):
     session = Session()
     yield session
     session.close()
+
+
+@pytest.fixture(scope="function")
+def db_session(engine):
+    """Create a DB session and seed the free plan for auth tests."""
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Seed free plan
+    free_plan = Plan(
+        name="free",
+        display_name="Free",
+        videos_per_month=3,
+        channels_limit=1,
+        team_seats=1,
+        price_cents=0,
+        overage_cents=0,
+        features={},
+    )
+    session.add(free_plan)
+    session.commit()
+
+    yield session
+    session.close()
+
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    """Create a FastAPI TestClient wired to the in-memory SQLite DB."""
+    from saas.main import create_app
+    from saas.api.deps import get_db
+
+    app = create_app()
+
+    def _override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = _override_get_db
+    with TestClient(app) as tc:
+        yield tc
+
+
+def create_test_user(db_session, email="test@example.com", password="testpassword123"):
+    """Helper to create a test user via the register endpoint logic."""
+    from saas.models.user import User
+    from saas.models.subscription import Subscription
+    from saas.services.auth_service import hash_password
+
+    user = User(
+        email=email,
+        password_hash=hash_password(password),
+        display_name="Test User",
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    free_plan = db_session.query(Plan).filter(Plan.name == "free").first()
+    if free_plan:
+        sub = Subscription(
+            user_id=user.id,
+            plan_id=free_plan.id,
+            status="active",
+        )
+        db_session.add(sub)
+
+    db_session.commit()
+    db_session.refresh(user)
+    return user
