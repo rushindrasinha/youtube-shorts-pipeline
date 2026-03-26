@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from . import (
+    admin,
     auth,
     billing,
     channels,
@@ -30,3 +31,4 @@ api_router.include_router(
     tags=["provider-keys"],
 )
 api_router.include_router(health.router, tags=["health"])
+api_router.include_router(admin.router, tags=["admin"])

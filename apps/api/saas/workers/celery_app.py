@@ -33,6 +33,9 @@ app.config_from_object({
 
     # Result expiry
     "result_expires": 86400,         # 24 hours
+
+    # Connection settings
+    "broker_connection_retry_on_startup": False,
 })
 
 

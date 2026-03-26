@@ -12,6 +12,7 @@ const buttonVariants = cva(
         primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-500 hover:to-indigo-500",
         ghost: "hover:bg-white/5 text-zinc-400 hover:text-zinc-50",
         outline: "border border-white/10 text-zinc-300 hover:bg-white/5 hover:text-zinc-50",
+        secondary: "bg-zinc-800 text-zinc-200 hover:bg-zinc-700",
         destructive: "bg-red-600 text-white hover:bg-red-500",
       },
       size: {
