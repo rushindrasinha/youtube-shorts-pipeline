@@ -32,16 +32,24 @@ development infrastructure.
 - [ ] Modify `pipeline/music.py` — add config injection
 - [ ] Write tests for `PipelineJob` (mock all API calls)
 - [ ] Verify existing CLI still works (backward compatibility)
+- [ ] Replace `openai-whisper` with `faster-whisper` (CTranslate2, 4x faster, 4x less memory)
 
 **Key principle:** All changes are additive. New `config` parameter defaults to `None`,
 preserving existing behavior.
 
-#### P0-2: Project Structure
-- [ ] Create `saas/` directory with all subdirectories (see 02-architecture.md)
+#### P0-2: Monorepo + Project Structure (see [02a-monorepo.md](../saas-plan/02a-monorepo.md))
+- [ ] Initialize pnpm + Turborepo at repo root
+- [ ] Create `pnpm-workspace.yaml`, root `package.json`, `turbo.json`
+- [ ] Create `apps/web/` — scaffold Next.js 15 project with TypeScript, Tailwind, shadcn/ui
+- [ ] Create `apps/api/` — FastAPI app with `package.json` shim for Turborepo
+- [ ] Create `packages/ui/` — shared UI component library (shadcn components)
+- [ ] Create `packages/tsconfig/` — shared TypeScript configs
+- [ ] Create `packages/eslint-config/` — shared ESLint configs
 - [ ] Create `requirements-saas.txt` with FastAPI, Celery, SQLAlchemy, etc.
 - [ ] Create `.env.example` with all environment variables
 - [ ] Create `docker/Dockerfile.api` and `docker/Dockerfile.worker`
 - [ ] Create `docker/docker-compose.yml` for local dev
+- [ ] Verify `pnpm dev` starts web + api in parallel
 - [ ] Verify `docker-compose up` starts all services
 
 #### P0-3: Database Setup
@@ -279,12 +287,18 @@ together, and view analytics. YouTube auto-upload functional. Social login activ
 - [ ] Log aggregation setup
 - [ ] Alert rules (job failure rate > 5%, worker count < 2, etc.)
 
-#### P4-2: Landing Page
-- [ ] Design and build marketing landing page (`/`)
-- [ ] Demo video showing the pipeline in action
-- [ ] Feature grid with icons
-- [ ] Pricing table (interactive, links to checkout)
-- [ ] FAQ section
+#### P4-2: Landing Page (see [08a-visual-design.md](../saas-plan/08a-visual-design.md))
+- [ ] Set up R3F hero scene with GSAP ScrollTrigger (dynamic import, SSR disabled)
+- [ ] Create 3D pipeline visualization geometry + post-processing (bloom, chromatic aberration)
+- [ ] Build hero fallback component (CSS mesh gradient for mobile + loading state)
+- [ ] Create Rive animations for 8 pipeline stage icons (.riv files, ~10-30KB each)
+- [ ] Build "How it works" section with Rive icons + gradient SVG connecting line
+- [ ] Build glassmorphic feature cards with CSS perspective tilt on hover
+- [ ] Build live stats section with spring-animated counters
+- [ ] Build pricing section with staggered perspective entrance + animated gradient border
+- [ ] Build CTA section with CSS mesh gradient background
+- [ ] Performance budget testing: Lighthouse (LCP < 2.5s), `@next/bundle-analyzer` (Three.js isolated in own chunk, <250KB)
+- [ ] Mobile testing: verify CSS fallback on mobile, no WebGL loaded
 - [ ] SEO optimization (meta tags, OpenGraph, structured data)
 
 #### P4-3: Admin Dashboard

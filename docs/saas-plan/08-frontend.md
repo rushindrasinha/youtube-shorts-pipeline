@@ -4,15 +4,22 @@
 
 | Technology | Purpose |
 |-----------|---------|
-| Next.js 14+ (App Router) | Framework, SSR, routing |
+| Next.js 15+ (App Router) | Framework, SSR, routing |
 | TypeScript | Type safety |
 | Tailwind CSS | Utility-first styling |
 | shadcn/ui | Component library (Radix primitives + Tailwind) |
 | TanStack Query (React Query) | Server state management, caching |
 | Zustand | Client state (auth, UI) |
-| Framer Motion | Animations (progress bars, transitions) |
+| React Three Fiber + drei + postprocessing | 3D cinematic landing hero (see [08a-visual-design](08a-visual-design.md)) |
+| GSAP + ScrollTrigger | Scroll-driven 3D animations + section transitions |
+| Framer Motion | UI animations (page transitions, entrances, hover) |
+| Rive (`@rive-app/react-canvas`) | Interactive micro-animations (pipeline icons, loading) |
+| Tremor | Analytics charts (built on Tailwind, matches shadcn) |
 | Stripe.js | Payment UI |
-| Recharts | Analytics charts |
+
+> **Visual design system:** See [08a-visual-design.md](08a-visual-design.md) for the
+> complete color system, typography, animation architecture, landing page
+> section-by-section design, performance budgets, and component patterns.
 
 ---
 
@@ -63,6 +70,22 @@ frontend/
         jobs/page.tsx               # All jobs (global view)
     components/
       ui/                           # shadcn/ui components (button, card, dialog, etc.)
+      landing/                      # Landing page 3D + animation components
+        hero-scene.tsx              # R3F canvas (dynamic import, ssr: false)
+        hero-fallback.tsx           # CSS gradient fallback (mobile + loading)
+        pipeline-showcase.tsx       # "How it works" with Rive icons
+        feature-cards.tsx           # Glassmorphic deep-dive cards
+        pricing-section.tsx         # Plan cards with stagger entrance
+        cta-section.tsx             # CTA with mesh gradient background
+      motion/                       # Reusable animation primitives
+        fade-in.tsx                 # whileInView fade-in wrapper
+        stagger-children.tsx        # Stagger container for lists
+        progress-ring.tsx           # Circular progress (dashboard)
+        animated-number.tsx         # Spring-animated counter
+        page-transition.tsx         # Route transition wrapper
+      3d/                           # Three.js geometry (lazy-loaded)
+        pipeline-visualization.tsx  # Main 3D pipeline geometry
+        phone-frame.tsx             # 3D phone model for hero
       layout/
         sidebar.tsx                 # Dashboard sidebar navigation
         header.tsx                  # Top navigation bar
@@ -121,13 +144,16 @@ frontend/
 
 ### 1. Landing Page (`/`)
 
-Marketing page with:
-- Hero: "Turn Any Topic into a YouTube Short in Minutes"
-- Demo video showing the pipeline in action
-- Feature grid (AI script, visuals, voiceover, captions, music, upload)
-- Pricing table (Free / Creator / Pro / Agency)
-- Social proof / testimonials
-- CTA: "Start Free" → registration
+See [08a-visual-design.md](08a-visual-design.md) for the full section-by-section
+design with 3D hero, Rive animations, glassmorphic cards, and performance budgets.
+
+Summary:
+- **Hero:** 3D pipeline visualization (R3F) — topic transforms into visual frames → assembles into phone screen. Scroll-driven via GSAP. "Topic in. Short out."
+- **Pipeline showcase:** 8 Rive-animated stage icons connected by gradient SVG line
+- **Feature deep-dive:** 3 glassmorphic cards with live UI mockups (captions demo, trending topics, progress UI)
+- **Stats:** Animated counters (spring physics) for videos created, success rate, avg cost
+- **Pricing:** 4 plan cards with perspective entrance animations, recommended plan has animated gradient border
+- **CTA + Footer:** Mesh gradient background (pure CSS), "Start Free" button
 
 ### 2. Dashboard (`/dashboard`)
 

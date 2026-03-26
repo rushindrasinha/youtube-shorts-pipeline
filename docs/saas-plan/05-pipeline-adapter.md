@@ -13,6 +13,24 @@ callable library with:
 The key principle: **modify existing modules minimally**, create an adapter layer
 on top.
 
+> **Design decision: Explicit `config` params vs context vars.**
+> We considered using `contextvars.ContextVar` to avoid threading `config` through
+> every function signature. Rejected because: context vars create invisible coupling —
+> a function silently reads from a context set somewhere up the call stack. With
+> explicit `config: JobConfig = None` parameters, every function's dependencies are
+> visible in its signature, testing is straightforward (pass a mock config), and the
+> CLI path (`config=None`) works with zero changes.
+
+> **Thread safety note:** The `on_progress` callback will be called from multiple
+> threads when broll generation is parallelized via `ThreadPoolExecutor`. The callback
+> must use a separate DB session per update (not the task's main session) to avoid
+> SQLAlchemy concurrency errors:
+> ```python
+> def on_progress(stage, status, pct, artifacts):
+>     with Session(engine) as progress_db:
+>         _update_job_progress(progress_db, job_id, stage, status, pct, artifacts)
+> ```
+
 ---
 
 ## Changes to Existing Modules

@@ -2,9 +2,21 @@
 
 ## Overview
 
-All tables use UUIDs as primary keys, UTC timestamps, and soft-delete where
-appropriate. The schema supports both individual creators and agency teams
-from day one.
+All tables use **UUIDv7** as primary keys (time-ordered, no B-tree index
+fragmentation — unlike UUIDv4 which causes random I/O on inserts). Generated
+in application code via the `uuid7` Python package, or via the `pg_uuidv7`
+PostgreSQL extension. UTC timestamps throughout. The schema supports both
+individual creators and agency teams from day one.
+
+> **Note on JSONB columns:** JSONB is used for `features`, `pipeline_state`,
+> `draft_data`, `artifacts`, and `metadata`. This is correct because none of
+> these fields need JOINs or WHERE clauses on internal keys at scale. They are
+> read-mostly, opaque blobs.
+
+> **Note on soft deletes:** Not implemented. Instead: jobs use `status='canceled'`,
+> users use `is_active=FALSE`, audit_log is append-only, cache uses TTL expiry.
+> Blanket soft deletes create a liability (every query needs `WHERE deleted_at IS NULL`
+> which developers forget, causing data leaks). Database backups cover recovery needs.
 
 ---
 
@@ -33,7 +45,7 @@ Primary user table. Supports email/password and OAuth login.
 
 ```sql
 CREATE TABLE users (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     email           VARCHAR(255) UNIQUE NOT NULL,
     email_verified  BOOLEAN DEFAULT FALSE,
     password_hash   VARCHAR(255),                    -- NULL for OAuth-only users
@@ -63,7 +75,7 @@ Stores OAuth provider connections (Google, GitHub) for social login.
 
 ```sql
 CREATE TABLE oauth_connections (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider        VARCHAR(50) NOT NULL,            -- google, github
     provider_user_id VARCHAR(255) NOT NULL,
@@ -84,7 +96,7 @@ API keys for programmatic access to the ShortFactory API.
 
 ```sql
 CREATE TABLE user_api_keys (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name            VARCHAR(100) NOT NULL,
     key_prefix      VARCHAR(8) NOT NULL,             -- First 8 chars shown in UI
@@ -105,10 +117,11 @@ BYOK: User-provided API keys for Anthropic, Gemini, ElevenLabs.
 
 ```sql
 CREATE TABLE user_provider_keys (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider        VARCHAR(50) NOT NULL,            -- anthropic, gemini, elevenlabs
     api_key_enc     TEXT NOT NULL,                    -- Fernet encrypted
+    key_version     INTEGER DEFAULT 1,               -- Encryption key version (for key rotation)
     is_active       BOOLEAN DEFAULT TRUE,
     last_verified_at TIMESTAMPTZ,
     created_at      TIMESTAMPTZ DEFAULT NOW(),
@@ -126,10 +139,10 @@ Agency/team support. A user can own multiple teams.
 
 ```sql
 CREATE TABLE teams (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     name            VARCHAR(100) NOT NULL,
     slug            VARCHAR(100) UNIQUE NOT NULL,     -- URL-friendly name
-    owner_id        UUID NOT NULL REFERENCES users(id),
+    owner_id        UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     logo_url        VARCHAR(500),
 
     -- White-label settings
@@ -150,11 +163,11 @@ CREATE INDEX idx_teams_slug ON teams(slug);
 
 ```sql
 CREATE TABLE team_members (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     team_id         UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role            VARCHAR(20) DEFAULT 'member',     -- owner, admin, member, viewer
-    invited_by      UUID REFERENCES users(id),
+    invited_by      UUID REFERENCES users(id) ON DELETE SET NULL,
     joined_at       TIMESTAMPTZ DEFAULT NOW(),
 
     UNIQUE(team_id, user_id)
@@ -168,7 +181,7 @@ CREATE INDEX idx_team_members_user ON team_members(user_id);
 
 ```sql
 CREATE TABLE team_invites (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     team_id         UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     email           VARCHAR(255) NOT NULL,
     role            VARCHAR(20) DEFAULT 'member',
@@ -189,7 +202,7 @@ Connected YouTube channels with encrypted OAuth tokens.
 
 ```sql
 CREATE TABLE youtube_channels (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     team_id         UUID REFERENCES teams(id) ON DELETE SET NULL,  -- NULL = personal channel
 
@@ -200,6 +213,7 @@ CREATE TABLE youtube_channels (
     -- Encrypted OAuth credentials
     access_token_enc  TEXT NOT NULL,                   -- Fernet encrypted
     refresh_token_enc TEXT,                            -- Fernet encrypted
+    key_version       INTEGER DEFAULT 1,              -- Encryption key version (for rotation)
     token_expires_at  TIMESTAMPTZ,
     scopes           TEXT[],                           -- OAuth scopes granted
 
@@ -221,7 +235,7 @@ Subscription plan definitions.
 
 ```sql
 CREATE TABLE plans (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     name            VARCHAR(50) UNIQUE NOT NULL,      -- free, creator, pro, agency, enterprise
     display_name    VARCHAR(100) NOT NULL,
     stripe_price_id VARCHAR(255),                     -- Stripe Price ID
@@ -257,7 +271,7 @@ INSERT INTO plans (name, display_name, videos_per_month, channels_limit, team_se
 
 ```sql
 CREATE TABLE subscriptions (
-    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id             UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     plan_id             UUID NOT NULL REFERENCES plans(id),
     stripe_subscription_id VARCHAR(255) UNIQUE,
@@ -281,7 +295,7 @@ Core table: each video generation request is a "job."
 
 ```sql
 CREATE TABLE jobs (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     team_id         UUID REFERENCES teams(id) ON DELETE SET NULL,
     channel_id      UUID REFERENCES youtube_channels(id) ON DELETE SET NULL,
@@ -304,7 +318,7 @@ CREATE TABLE jobs (
     retry_count     INTEGER DEFAULT 0,
 
     -- Results (populated on completion)
-    video_id        UUID REFERENCES videos(id),
+    video_id        UUID REFERENCES videos(id) ON DELETE SET NULL,
 
     -- Cost tracking
     cost_usd        DECIMAL(10,4) DEFAULT 0,           -- Actual API cost for this job
@@ -331,6 +345,7 @@ CREATE TABLE jobs (
 CREATE INDEX idx_jobs_user ON jobs(user_id);
 CREATE INDEX idx_jobs_team ON jobs(team_id);
 CREATE INDEX idx_jobs_status ON jobs(status);
+CREATE INDEX idx_jobs_user_status ON jobs(user_id, status);   -- Most common query pattern
 CREATE INDEX idx_jobs_created ON jobs(created_at DESC);
 CREATE INDEX idx_jobs_scheduled ON jobs(scheduled_at) WHERE scheduled_at IS NOT NULL AND status = 'queued';
 ```
@@ -341,7 +356,7 @@ Detailed per-stage tracking for each job (mirrors PipelineState).
 
 ```sql
 CREATE TABLE job_stages (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     job_id          UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
     stage_name      VARCHAR(30) NOT NULL,              -- research, draft, broll, voiceover, etc.
 
@@ -369,7 +384,7 @@ Completed video records with S3 paths and YouTube metadata.
 
 ```sql
 CREATE TABLE videos (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     job_id          UUID UNIQUE NOT NULL REFERENCES jobs(id),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     team_id         UUID REFERENCES teams(id),
@@ -383,7 +398,7 @@ CREATE TABLE videos (
     language        VARCHAR(5) DEFAULT 'en',
 
     -- Storage
-    video_url       VARCHAR(500) NOT NULL,             -- S3 presigned or CDN URL
+    video_url       VARCHAR(500) NOT NULL,             -- CDN URL (NEVER presigned — they expire)
     video_s3_key    VARCHAR(500) NOT NULL,             -- S3 object key
     thumbnail_url   VARCHAR(500),
     thumbnail_s3_key VARCHAR(500),
@@ -417,7 +432,7 @@ Tracks per-period usage for billing and limit enforcement.
 
 ```sql
 CREATE TABLE usage_records (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     period_start    DATE NOT NULL,                     -- First day of billing period
@@ -445,7 +460,7 @@ Global cache for trending topics (refreshed every 15 min).
 
 ```sql
 CREATE TABLE trending_topics_cache (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     source          VARCHAR(50) NOT NULL,              -- reddit, rss, google_trends, etc.
     title           TEXT NOT NULL,
     summary         TEXT,
@@ -467,7 +482,7 @@ Audit trail for security-sensitive operations.
 
 ```sql
 CREATE TABLE audit_log (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v7(),
     user_id         UUID REFERENCES users(id),
     team_id         UUID REFERENCES teams(id),
 

@@ -247,16 +247,18 @@ POST   /jobs/{id}/retry             Retry a failed job
   ],
   "pagination": {
     "next_cursor": "xxx",
-    "has_more": true,
-    "total": 47
+    "has_more": true
   }
 }
 ```
 
 #### GET /jobs/{id}
 
+Supports opt-in fields via `?include=` query param to avoid sending large JSONB
+fields by default: `GET /jobs/{id}?include=draft_data,stages`
+
 ```json
-// Response 200
+// Response 200 (default — excludes draft_data)
 {
   "id": "uuid",
   "topic": "SpaceX successfully lands Starship",
@@ -555,27 +557,59 @@ GET    /admin/system                 System health (Redis, DB, workers)
 
 ---
 
-## WebSocket — `/ws`
+## Server-Sent Events (SSE) — Job Progress
 
-### Job Progress
+SSE is used for job progress (unidirectional server→client). Simpler than WebSocket,
+auto-reconnects via browser `EventSource` API, works through CDNs.
+
+### `GET /jobs/{id}/events` (SSE)
 
 ```
-WS /ws/jobs/{job_id}
+Accept: text/event-stream
+Authorization: Bearer <jwt>
 ```
 
 Server pushes events:
-```json
-{"type": "stage_started", "stage": "broll", "progress_pct": 20}
-{"type": "stage_completed", "stage": "broll", "progress_pct": 30, "duration_ms": 12000}
-{"type": "stage_started", "stage": "voiceover", "progress_pct": 30}
-{"type": "job_completed", "progress_pct": 100, "video_url": "https://..."}
-{"type": "job_failed", "error": "ElevenLabs API rate limited", "stage": "voiceover"}
+```
+event: stage_started
+data: {"stage": "broll", "progress_pct": 20}
+
+event: stage_completed
+data: {"stage": "broll", "progress_pct": 30, "duration_ms": 12000}
+
+event: stage_started
+data: {"stage": "voiceover", "progress_pct": 30}
+
+event: job_completed
+data: {"progress_pct": 100, "video_url": "https://..."}
+
+event: job_failed
+data: {"error": "ElevenLabs API rate limited", "stage": "voiceover"}
 ```
 
-### Global Notifications
+Client usage:
+```typescript
+const source = new EventSource(`/api/v1/jobs/${jobId}/events`, {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+source.addEventListener('stage_completed', (e) => {
+  const data = JSON.parse(e.data)
+  setProgress(data.progress_pct)
+})
+source.addEventListener('job_completed', (e) => {
+  source.close()
+  // show completion UI
+})
+// EventSource auto-reconnects on network failure
+```
+
+### WebSocket — `/ws/notifications` (bidirectional)
+
+WebSocket is used only for global notifications (bidirectional: server pushes,
+client can mark-as-read):
 
 ```
-WS /ws/notifications
+WS /ws/notifications?token=<jwt>
 ```
 
 Server pushes:
@@ -583,6 +617,11 @@ Server pushes:
 {"type": "job_completed", "job_id": "uuid", "topic": "...", "thumbnail_url": "..."}
 {"type": "upload_completed", "job_id": "uuid", "youtube_url": "..."}
 {"type": "usage_warning", "videos_remaining": 3}
+```
+
+Client sends:
+```json
+{"type": "mark_read", "notification_id": "uuid"}
 ```
 
 ---

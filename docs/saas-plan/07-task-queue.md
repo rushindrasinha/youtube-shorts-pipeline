@@ -41,13 +41,14 @@ app.config_from_object({
     },
 
     # Concurrency limits
-    "worker_concurrency": 4,           # 4 concurrent video jobs per worker
-    "task_time_limit": 600,            # 10 min hard limit per job
-    "task_soft_time_limit": 540,       # 9 min soft limit (raises SoftTimeLimitExceeded)
+    "worker_concurrency": 2,           # 2 concurrent video jobs per worker (FFmpeg+Whisper are CPU-bound; scale horizontally)
+    "task_time_limit": 900,            # 15 min hard limit (pipeline with retries can take 7+ min)
+    "task_soft_time_limit": 840,       # 14 min soft limit (raises SoftTimeLimitExceeded)
 
     # Retry configuration
     "task_acks_late": True,            # Acknowledge after task completes (crash safety)
     "worker_prefetch_multiplier": 1,   # Don't prefetch — video jobs are long-running
+    "task_reject_on_worker_lost": True, # If worker OOM-killed, return task to queue (not stuck forever)
 
     # Result expiry
     "result_expires": 86400,           # 24 hours
@@ -56,17 +57,16 @@ app.config_from_object({
 
 @worker_init.connect
 def init_worker(**kwargs):
-    """Called when a Celery worker starts. Pre-load expensive resources."""
-    # Pre-load Whisper model (shared across all tasks in this worker)
-    try:
-        import whisper
-        global _whisper_model
-        _whisper_model = whisper.load_model("base")
-        print("Whisper model pre-loaded.")
-    except ImportError:
-        print("Whisper not available — captions will use CLI fallback.")
+    """Called when a Celery worker starts.
 
-    # Warm up any other expensive resources
+    NOTE: Whisper model is NOT pre-loaded here. It is cached at module level
+    in pipeline/captions.py (_get_whisper_model). Loading in two places wastes
+    memory and creates confusion about which global is used. The captions module
+    cache is the single source of truth.
+
+    Use faster-whisper (CTranslate2) instead of openai-whisper for 4x speedup
+    and 4x less memory on CPU.
+    """
     print("Worker initialized.")
 ```
 
@@ -185,7 +185,8 @@ def run_video_pipeline(self, job_id: str):
         if result["status"] == "completed":
             # 7. Upload artifacts to S3
             storage = StorageService()
-            user_prefix = f"{job.user_id}/{job_id}"
+            month = datetime.now(timezone.utc).strftime("%Y-%m")
+            user_prefix = f"{job.user_id}/{month}/{job_id}"
 
             video_url = storage.upload_file(
                 result["video_path"],
@@ -467,86 +468,83 @@ def refresh_trending_topics():
 
 ---
 
-## WebSocket Progress Delivery
+## SSE Progress Delivery
+
+Job progress uses Server-Sent Events (SSE) instead of WebSocket. SSE is simpler
+(unidirectional), has built-in browser auto-reconnect via `EventSource`, and works
+through CDNs and reverse proxies without special configuration.
 
 ```python
-# saas/websocket/manager.py
+# saas/api/v1/jobs.py — SSE endpoint
 
-import asyncio
-import json
-from collections import defaultdict
-
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import StreamingResponse
 import redis.asyncio as aioredis
-from fastapi import WebSocket
+import json
 
+@router.get("/jobs/{job_id}/events")
+async def job_progress_sse(
+    job_id: str,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """SSE endpoint for real-time job progress updates."""
+    # Verify user owns this job
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user.id).first()
+    if not job:
+        raise HTTPException(404)
 
-class ConnectionManager:
-    """Manages WebSocket connections and Redis pub/sub for job progress."""
-
-    def __init__(self):
-        self._connections: dict[str, list[WebSocket]] = defaultdict(list)
-        self._redis: aioredis.Redis | None = None
-
-    async def connect(self, job_id: str, websocket: WebSocket, user_id: str):
-        """Accept a WebSocket connection and subscribe to job events."""
-        await websocket.accept()
-        self._connections[job_id].append(websocket)
-
-        # Start listening for Redis pub/sub events
-        if not self._redis:
-            self._redis = aioredis.from_url("redis://localhost:6379/0")
-
-        pubsub = self._redis.pubsub()
+    async def event_stream():
+        r = aioredis.from_url("redis://localhost:6379/0")
+        pubsub = r.pubsub()
         await pubsub.subscribe(f"job:{job_id}")
 
         try:
             async for message in pubsub.listen():
+                # Check if client disconnected
+                if await request.is_disconnected():
+                    break
+
                 if message["type"] == "message":
                     data = message["data"]
                     if isinstance(data, bytes):
                         data = data.decode()
-                    await websocket.send_text(data)
-        except Exception:
-            pass
+
+                    parsed = json.loads(data)
+                    event_type = parsed.get("type", "progress")
+                    yield f"event: {event_type}\ndata: {data}\n\n"
+
+                    # Close stream on terminal events
+                    if event_type in ("job_completed", "job_failed"):
+                        break
         finally:
             await pubsub.unsubscribe(f"job:{job_id}")
-            self._connections[job_id].remove(websocket)
+            await r.close()
 
-    async def disconnect(self, job_id: str, websocket: WebSocket):
-        if websocket in self._connections[job_id]:
-            self._connections[job_id].remove(websocket)
-
-
-manager = ConnectionManager()
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",    # Disable nginx buffering
+        },
+    )
 ```
 
-```python
-# saas/websocket/job_progress.py
+Client usage (auto-reconnects on network failure):
+```typescript
+const source = new EventSource(`/api/v1/jobs/${jobId}/events`)
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from saas.api.deps import get_current_user_ws
-from saas.websocket.manager import manager
+source.addEventListener('stage_completed', (e) => {
+  const data = JSON.parse(e.data)
+  setProgress(data.progress_pct)
+})
 
-ws_router = APIRouter()
-
-@ws_router.websocket("/ws/jobs/{job_id}")
-async def job_progress_ws(websocket: WebSocket, job_id: str):
-    """WebSocket endpoint for real-time job progress updates."""
-    # Authenticate via query param token
-    token = websocket.query_params.get("token")
-    user = await get_current_user_ws(token)
-
-    if not user:
-        await websocket.close(code=4001, reason="Unauthorized")
-        return
-
-    # Verify user owns this job
-    # ... (check job.user_id == user.id or team membership)
-
-    try:
-        await manager.connect(job_id, websocket, str(user.id))
-    except WebSocketDisconnect:
-        await manager.disconnect(job_id, websocket)
+source.addEventListener('job_completed', (e) => {
+  source.close()
+})
 ```
 
 ---

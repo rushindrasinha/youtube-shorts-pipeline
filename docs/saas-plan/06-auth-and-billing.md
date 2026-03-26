@@ -5,12 +5,18 @@
 ### JWT Token Flow
 
 ```
-1. User registers/logs in → API returns access_token (15 min) + refresh_token (7 days)
-2. Frontend stores tokens in httpOnly cookies (not localStorage — XSS protection)
-3. Every API request includes: Authorization: Bearer <access_token>
-4. When access_token expires → POST /auth/refresh with refresh_token
-5. When refresh_token expires → user must re-login
+1. User registers/logs in → API sets access_token (15 min) + refresh_token (24h)
+   as httpOnly, Secure, SameSite=Lax cookies
+2. Every API request automatically includes cookies (no localStorage, no XSS risk)
+3. When access_token expires → POST /auth/refresh (refresh token sent via cookie)
+4. Refresh token rotation: each refresh issues a new refresh token and invalidates the old
+5. Revoked JTIs stored in Redis with TTL (O(1) lookup, no DB write on refresh)
+6. When refresh_token expires → user must re-login
 ```
+
+> **SECURITY NOTE:** Tokens are NEVER placed in URL query parameters (logged by
+> browsers, proxies, and server access logs). The OAuth callback sets cookies
+> directly in the redirect response.
 
 ### Token Structure
 
@@ -50,7 +56,7 @@ from uuid import uuid4
 SECRET_KEY = settings.JWT_SECRET_KEY      # 256-bit random, from env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE = timedelta(minutes=15)
-REFRESH_TOKEN_EXPIRE = timedelta(days=7)
+REFRESH_TOKEN_EXPIRE = timedelta(hours=24)   # 24h with rotation (not 7 days)
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -145,10 +151,20 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
     access_token = create_access_token(user)
     refresh_token = create_refresh_token(user)
 
-    # Redirect to frontend with tokens
-    return RedirectResponse(
-        f"{settings.FRONTEND_URL}/auth/callback?access_token={access_token}&refresh_token={refresh_token}"
+    # Set tokens as httpOnly cookies — NEVER in URL params (security risk)
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback")
+    response.set_cookie(
+        "access_token", access_token,
+        httponly=True, secure=True, samesite="lax",
+        max_age=int(ACCESS_TOKEN_EXPIRE.total_seconds()),
     )
+    response.set_cookie(
+        "refresh_token", refresh_token,
+        httponly=True, secure=True, samesite="lax",
+        max_age=int(REFRESH_TOKEN_EXPIRE.total_seconds()),
+        path="/auth/refresh",  # Only sent to refresh endpoint
+    )
+    return response
 ```
 
 ### API Key Authentication (Programmatic Access)
@@ -173,7 +189,12 @@ async def get_current_user(
             UserAPIKey.is_active == True,
         ).first()
 
-        if key_record and bcrypt.checkpw(x_api_key.encode(), key_record.key_hash.encode()):
+        # Use SHA-256 for API keys (not bcrypt — bcrypt is ~100ms/check, too slow
+        # for per-request auth). API keys are already high-entropy random strings,
+        # so bcrypt's slow hashing for weak passwords is unnecessary.
+        import hashlib
+        key_hash = hashlib.sha256(x_api_key.encode()).hexdigest()
+        if key_record and key_hash == key_record.key_hash:
             key_record.last_used_at = datetime.now(timezone.utc)
             db.commit()
             return key_record.user

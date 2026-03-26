@@ -104,12 +104,14 @@ doesn't pay the API costs:
 |-----|---------|
 | [01-codebase-analysis](01-codebase-analysis.md) | Current codebase review, hidden gems, optimization opportunities |
 | [02-architecture](02-architecture.md) | Full SaaS architecture with technology choices |
+| [02a-monorepo](02a-monorepo.md) | Turborepo + pnpm monorepo structure, polyglot Python/TS setup |
 | [03-database-schema](03-database-schema.md) | Complete PostgreSQL schema with all tables |
 | [04-api-design](04-api-design.md) | REST API specification — every endpoint |
 | [05-pipeline-adapter](05-pipeline-adapter.md) | Refactoring CLI pipeline into a SaaS-callable library |
 | [06-auth-and-billing](06-auth-and-billing.md) | Authentication, Stripe integration, subscription management |
 | [07-task-queue](07-task-queue.md) | Celery workers, job orchestration, real-time updates |
 | [08-frontend](08-frontend.md) | Next.js frontend — pages, components, API integration |
+| [08a-visual-design](08a-visual-design.md) | Visual design system — 3D hero, animation stack, color/typography, performance budgets |
 | [09-deployment](09-deployment.md) | Docker, CI/CD, infrastructure, monitoring |
 | [10-agency-features](10-agency-features.md) | Multi-team, white-label, agency-specific features |
 | [11-implementation-roadmap](11-implementation-roadmap.md) | Phased roadmap with milestones and deliverables |
@@ -122,9 +124,13 @@ doesn't pay the API costs:
 | Task queue | Celery + Redis | Industry standard, battle-tested, supports priority queues |
 | Database | PostgreSQL | ACID compliance, JSON support, scales vertically for years |
 | ORM | SQLAlchemy 2.0 | Async support, mature, Alembic for migrations |
-| Frontend | Next.js 14+ (App Router) | SSR, great DX, Vercel deployment, shadcn/ui components |
-| Storage | S3-compatible (R2/MinIO) | Cost-effective, CDN-friendly, presigned URLs |
-| Auth | JWT + OAuth2 (Google/GitHub) | Standard, stateless, social login for low friction |
+| Frontend | Next.js 15 (App Router) | SSR, great DX, Vercel deployment, shadcn/ui components |
+| 3D / Animation | R3F + GSAP + Framer Motion + Rive | Cinematic landing hero, scroll-driven, performant (see [08a-visual-design](08a-visual-design.md)) |
+| Monorepo | Turborepo + pnpm workspaces | Unified builds, shared configs, remote caching for CI |
+| Storage | S3-compatible (Cloudflare R2) | Zero egress fees, CDN-friendly, store S3 keys (never presigned URLs) |
+| Auth | JWT (httpOnly cookies) + OAuth2 | Secure token storage, social login (Google/GitHub) |
+| Real-time updates | SSE for job progress, WebSocket for notifications | SSE is simpler, auto-reconnects, CDN-friendly for unidirectional updates |
+| Primary keys | UUIDv7 | Time-ordered (no B-tree fragmentation), standard 128-bit UUID |
 | Payments | Stripe | Subscriptions + usage-based billing + webhooks |
 | Deployment | Docker + Railway/Fly.io | Simple to start, easy to scale to k8s later |
 | API keys model | Hybrid (platform + BYOK) | Lower barrier to entry, power-user flexibility |

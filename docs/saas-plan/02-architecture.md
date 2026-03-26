@@ -10,11 +10,19 @@
 | **Database** | PostgreSQL | 16+ | ACID, JSONB for flexible metadata, full-text search, scales for years |
 | **ORM** | SQLAlchemy 2.0 | 2.0+ | Async support, Alembic migrations, mature ecosystem |
 | **Migrations** | Alembic | 1.13+ | Industry standard for SQLAlchemy, auto-generates migrations |
-| **Frontend** | Next.js | 14+ | App Router, SSR, Vercel deployment, shadcn/ui |
+| **Frontend** | Next.js | 15+ | App Router, SSR, Vercel deployment, shadcn/ui |
 | **UI Components** | shadcn/ui + Tailwind | Latest | Beautiful, accessible, copy-paste components |
+| **3D / Hero** | React Three Fiber + drei + postprocessing | 8.x / 9.x / 2.x | One cinematic 3D landing hero scene (see [08a-visual-design](08a-visual-design.md)) |
+| **Scroll Animation** | GSAP + ScrollTrigger | 3.12+ | Scroll-driven 3D scene + section transitions |
+| **UI Animation** | Framer Motion | 11+ | Page transitions, element entrances, hover states |
+| **Micro-interactions** | Rive | Latest | Interactive pipeline stage icons, loading states |
+| **Charts** | Tremor | 3.x | Usage/analytics charts, built on Tailwind |
+| **Monorepo** | Turborepo + pnpm | Latest | Unified task orchestration, remote caching |
 | **Object Storage** | S3-compatible (Cloudflare R2) | N/A | Zero egress fees, S3 API compatible, cheap storage |
 | **CDN** | Cloudflare | N/A | Free tier generous, paired with R2 |
-| **Auth** | Custom JWT + OAuth2 | N/A | Google/GitHub social login, API keys for programmatic access |
+| **Auth** | JWT (httpOnly cookies) + OAuth2 | N/A | Secure token storage, social login, API keys for programmatic access |
+| **Primary Keys** | UUIDv7 | N/A | Time-ordered (no B-tree index fragmentation), standard UUID type |
+| **Real-time** | SSE (job progress) + WebSocket (notifications) | N/A | SSE: simpler, auto-reconnect, CDN-friendly for unidirectional updates |
 | **Payments** | Stripe | Latest | Subscriptions + usage-based billing + webhooks |
 | **Monitoring** | Sentry + Prometheus | N/A | Error tracking + metrics |
 | **Deployment** | Docker + Railway | N/A | Simple to start, easy to migrate to k8s |
@@ -255,10 +263,10 @@ async def list_jobs(user: User = Depends(get_current_user), db: Session = Depend
 
 S3 paths follow a strict user-scoped pattern:
 ```
-s3://shortfactory-media/{user_id}/{job_id}/broll_0.png
-s3://shortfactory-media/{user_id}/{job_id}/voiceover.mp3
-s3://shortfactory-media/{user_id}/{job_id}/final.mp4
-s3://shortfactory-media/{user_id}/{job_id}/thumbnail.png
+s3://shortfactory-media/{user_id}/{YYYY-MM}/{job_id}/broll_0.png
+s3://shortfactory-media/{user_id}/{YYYY-MM}/{job_id}/voiceover.mp3
+s3://shortfactory-media/{user_id}/{YYYY-MM}/{job_id}/final.mp4
+s3://shortfactory-media/{user_id}/{YYYY-MM}/{job_id}/thumbnail.png
 ```
 
 No user can ever access another user's storage prefix.
