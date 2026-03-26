@@ -1,6 +1,7 @@
 """Stripe webhook handler — unauthenticated, verifies signature."""
 
 from datetime import datetime, timezone
+from uuid import UUID
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -63,7 +64,7 @@ def _handle_subscription_created(db: Session, stripe_sub: dict):
     if not user_id or not plan_name:
         return
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == UUID(user_id)).first()
     plan = db.query(Plan).filter(Plan.name == plan_name).first()
 
     if not user or not plan:
