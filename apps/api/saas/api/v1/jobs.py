@@ -173,7 +173,10 @@ async def retry_failed_job(
     db: Session = Depends(get_db),
 ):
     """Retry a failed job by re-enqueueing it."""
-    job = retry_job(db, user.id, job_id)
+    from ...models.job import Job
+
+    # First check the job exists and belongs to user
+    job = db.query(Job).filter(Job.id == job_id, Job.user_id == user.id).first()
     if not job:
         raise HTTPException(
             status_code=404,
@@ -182,7 +185,7 @@ async def retry_failed_job(
             ).model_dump(),
         )
 
-    if job.status != "queued":
+    if job.status != "failed":
         raise HTTPException(
             status_code=409,
             detail=ErrorResponse(
@@ -192,6 +195,8 @@ async def retry_failed_job(
                 )
             ).model_dump(),
         )
+
+    job = retry_job(db, user.id, job_id)
 
     # Enqueue to Celery
     try:
