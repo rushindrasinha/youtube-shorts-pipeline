@@ -34,7 +34,29 @@ def engine():
     sqlite3.register_converter("UUID", lambda b: b.decode())
     sqlite3.register_converter("CHAR", lambda b: b.decode())
 
+    from sqlalchemy import Uuid
     from sqlalchemy.pool import StaticPool
+
+    # Patch UUID bind_processor and result_processor for SQLite compatibility.
+    # SQLite stores UUIDs as strings. When SQLAlchemy loads them, they come back
+    # as strings. The bind_processor then fails calling .hex on a string.
+    _orig_bind_processor = Uuid.bind_processor
+
+    def _patched_bind_processor(self, dialect):
+        def process(value):
+            if value is None:
+                return value
+            if isinstance(value, str):
+                try:
+                    value = PyUUID(value)
+                except ValueError:
+                    return value
+            if hasattr(value, 'hex'):
+                return value.hex
+            return str(value)
+        return process
+
+    Uuid.bind_processor = _patched_bind_processor
 
     eng = create_engine(
         "sqlite:///:memory:",
