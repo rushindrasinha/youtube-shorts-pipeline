@@ -1,0 +1,38 @@
+
+> @repo/web@0.0.0 build /home/user/youtube-shorts-pipeline/apps/web
+> next build
+
+   ▲ Next.js 15.5.14
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.8s
+   Linting and checking validity of types ...
+   
+Your tsconfig.json extends another configuration, which means we cannot add the Next.js TypeScript plugin automatically. To improve your development experience, we recommend adding the Next.js plugin (`"plugins": [{ "name": "next" }]`) manually to your TypeScript configuration. Learn more: https://nextjs.org/docs/app/api-reference/config/typescript#the-typescript-plugin
+
+
+   We detected TypeScript in your project and reconfigured your tsconfig.json file for you. Strict-mode is set to false by default.
+   The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+   	- include was set to ['../../packages/tsconfig/next-env.d.ts', '../../packages/tsconfig/**/*.ts', '../../packages/tsconfig/**/*.tsx', '../../packages/tsconfig/.next/types/**/*.ts', '.next/types/**/*.ts']
+
+   Collecting page data ...
+   Generating static pages (0/4) ...
+   Generating static pages (1/4) 
+   Generating static pages (2/4) 
+   Generating static pages (3/4) 
+ ✓ Generating static pages (4/4)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                      123 B         102 kB
+└ ○ /_not-found                            990 B         103 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/1ff282bf-ba680fa8e8838208.js  54.2 kB
+  ├ chunks/937-37567281693ec530.js         46 kB
+  └ other shared chunks (total)           1.9 kB
+
+
+○  (Static)  prerendered as static content
+
