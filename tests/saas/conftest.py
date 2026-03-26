@@ -116,12 +116,15 @@ def client(db_session):
     from saas.main import create_app
     from saas.api.deps import get_db
 
-    # Set Celery to eager mode so tasks run in-process without Redis
-    from saas.workers.celery_app import app as celery_app
-    celery_app.conf.update(
-        task_always_eager=True,
-        task_eager_propagates=False,
+    # Patch Celery's apply_async to be a no-op in tests (no Redis needed)
+    from unittest.mock import MagicMock, patch
+    mock_task_result = MagicMock()
+    mock_task_result.id = "test-task-id"
+    _apply_async_patch = patch(
+        "saas.tasks.pipeline_task.run_video_pipeline.apply_async",
+        return_value=mock_task_result,
     )
+    _apply_async_patch.start()
 
     app = create_app()
 
@@ -132,8 +135,11 @@ def client(db_session):
             pass
 
     app.dependency_overrides[get_db] = _override_get_db
-    with TestClient(app) as tc:
-        yield tc
+    try:
+        with TestClient(app) as tc:
+            yield tc
+    finally:
+        _apply_async_patch.stop()
 
 
 def create_test_user(db_session, email="test@example.com", password="testpassword123"):
