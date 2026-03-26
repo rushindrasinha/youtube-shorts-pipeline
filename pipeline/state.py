@@ -18,8 +18,9 @@ class PipelineState:
     Re-running `produce` skips completed stages automatically.
     """
 
-    def __init__(self, draft: dict):
+    def __init__(self, draft: dict, on_progress: callable = None):
         self.draft = draft
+        self._on_progress = on_progress
         if "_pipeline_state" not in self.draft:
             self.draft["_pipeline_state"] = {}
 
@@ -36,6 +37,16 @@ class PipelineState:
         entry = self.state.get(stage, {})
         return entry.get("status") == "failed"
 
+    def start_stage(self, stage: str):
+        """Mark a stage as started (for progress tracking)."""
+        self.state[stage] = {
+            "status": "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if self._on_progress:
+            pct = self._calculate_progress(stage) - 5
+            self._on_progress(stage, "running", max(0, pct), None)
+
     def complete_stage(self, stage: str, artifacts: dict | None = None):
         """Mark a stage as completed with optional artifact metadata."""
         self.state[stage] = {
@@ -44,6 +55,9 @@ class PipelineState:
         }
         if artifacts:
             self.state[stage]["artifacts"] = artifacts
+        if self._on_progress:
+            pct = self._calculate_progress(stage)
+            self._on_progress(stage, "done", pct, artifacts)
 
     def fail_stage(self, stage: str, error: str = ""):
         """Mark a stage as failed."""
@@ -72,6 +86,13 @@ class PipelineState:
             marker = {"done": "+", "failed": "!", "pending": " "}.get(status, "?")
             lines.append(f"  [{marker}] {stage}")
         return "\n".join(lines)
+
+    def _calculate_progress(self, stage: str) -> int:
+        """Calculate percentage from stage index."""
+        if stage not in STAGES:
+            return 0
+        idx = STAGES.index(stage)
+        return int(((idx + 1) / len(STAGES)) * 100)
 
     def save(self, path: Path):
         """Write the draft (with embedded state) to disk."""

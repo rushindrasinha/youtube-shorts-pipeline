@@ -1,6 +1,7 @@
 """Gemini Imagen b-roll generation + Ken Burns animation."""
 
 import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import requests
@@ -51,15 +52,18 @@ def _fallback_frame(i: int, out_dir: Path) -> Path:
     return path
 
 
-def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
-    """Generate 3 b-roll frames via Gemini Imagen, with fallback."""
-    api_key = get_gemini_key()
-    frames = []
+def generate_broll(prompts: list, out_dir: Path, config=None) -> list[Path]:
+    """Generate 3 b-roll frames via Gemini Imagen, with fallback.
 
-    for i, prompt in enumerate(prompts[:3]):
+    When config is provided, uses config.gemini_api_key. Generates frames
+    concurrently using ThreadPoolExecutor.
+    """
+    api_key = config.gemini_api_key if config and config.gemini_api_key else get_gemini_key()
+    frames = [None] * min(len(prompts), 3)
+
+    def _gen_single(i, prompt):
         out_path = out_dir / f"broll_{i}.png"
         log(f"Generating b-roll frame {i+1}/3 via Gemini Imagen...")
-
         try:
             _generate_image_gemini(prompt, out_path, api_key)
 
@@ -74,11 +78,16 @@ def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
             top = (new_h - target_h) // 2
             img = img.crop((left, top, left + target_w, top + target_h))
             img.save(out_path)
-            frames.append(out_path)
-
+            return out_path
         except Exception as e:
             log(f"Frame {i+1} failed: {e} — using fallback")
-            frames.append(_fallback_frame(i, out_dir))
+            return _fallback_frame(i, out_dir)
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = {pool.submit(_gen_single, i, p): i for i, p in enumerate(prompts[:3])}
+        for future in as_completed(futures):
+            i = futures[future]
+            frames[i] = future.result()
 
     return frames
 

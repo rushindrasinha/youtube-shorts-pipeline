@@ -44,10 +44,10 @@ def _say_fallback(script: str, out_dir: Path) -> Path:
     return mp3_path
 
 
-def generate_voiceover(script: str, out_dir: Path, lang: str = "en") -> Path:
+def generate_voiceover(script: str, out_dir: Path, lang: str = "en", config=None) -> Path:
     """Generate voiceover via ElevenLabs, with macOS 'say' fallback."""
-    voice_id = VOICE_ID_HI if lang == "hi" else VOICE_ID_EN
-    api_key = get_elevenlabs_key()
+    voice_id = config.voice_id if config and config.voice_id else (VOICE_ID_HI if lang == "hi" else VOICE_ID_EN)
+    api_key = config.elevenlabs_api_key if config and config.elevenlabs_api_key else get_elevenlabs_key()
 
     if not api_key:
         log("No ElevenLabs key — using macOS 'say' fallback")

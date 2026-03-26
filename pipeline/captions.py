@@ -4,6 +4,22 @@ from pathlib import Path
 
 from .log import log
 
+# Module-level model cache for faster-whisper
+_whisper_model = None
+
+
+def _get_whisper_model():
+    """Get or create a cached faster-whisper model instance."""
+    global _whisper_model
+    if _whisper_model is None:
+        try:
+            from faster_whisper import WhisperModel
+            _whisper_model = WhisperModel("base", compute_type="int8")
+        except ImportError:
+            log("faster-whisper not installed — skipping word timestamps")
+            return None
+    return _whisper_model
+
 
 def _has_ass_filter() -> bool:
     """Check if ffmpeg has libass (for ASS subtitle burn-in)."""
@@ -19,31 +35,24 @@ def _has_ass_filter() -> bool:
 
 
 def _whisper_word_timestamps(audio_path: Path, lang: str = "en") -> list[dict]:
-    """Get word-level timestamps from Whisper.
+    """Get word-level timestamps from faster-whisper.
 
     Returns list of {"word": str, "start": float, "end": float}.
     """
-    try:
-        import whisper
-    except ImportError:
-        log("Whisper not installed — skipping word timestamps")
+    model = _get_whisper_model()
+    if model is None:
         return []
 
-    log("Running Whisper for word-level timestamps...")
-    model = whisper.load_model("base")
-    result = model.transcribe(
-        str(audio_path),
-        language=lang[:2],
-        word_timestamps=True,
-    )
+    log("Running faster-whisper for word-level timestamps...")
+    segments, info = model.transcribe(str(audio_path), language=lang[:2], word_timestamps=True)
 
     words = []
-    for segment in result.get("segments", []):
-        for w in segment.get("words", []):
+    for segment in segments:
+        for word in segment.words:
             words.append({
-                "word": w["word"].strip(),
-                "start": w["start"],
-                "end": w["end"],
+                "word": word.word.strip(),
+                "start": word.start,
+                "end": word.end,
             })
 
     log(f"Got {len(words)} word timestamps.")

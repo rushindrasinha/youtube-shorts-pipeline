@@ -73,8 +73,11 @@ def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float =
     return f"volume='if({condition_expr}, 0.12, 0.25)':eval=frame"
 
 
-def select_and_prepare_music(voiceover_path: Path, work_dir: Path) -> dict:
+def select_and_prepare_music(voiceover_path: Path, work_dir: Path, config=None) -> dict:
     """Select a random track, build duck filter from speech regions.
+
+    When config is provided, config.music_genre can be used for future
+    genre-based track selection. Currently selects randomly.
 
     Returns dict with track_path and duck_filter for use by assemble.py.
     """

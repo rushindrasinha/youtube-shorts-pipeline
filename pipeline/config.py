@@ -5,7 +5,9 @@ import os
 import stat
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional, Callable
 
 # ─────────────────────────────────────────────────────
 # Skill home directory — all data lives here
@@ -69,8 +71,10 @@ def extract_keywords(text: str) -> str:
 # ─────────────────────────────────────────────────────
 # API key resolution — env → config.json
 # ─────────────────────────────────────────────────────
-def _get_key(name: str) -> str:
-    """Resolve an API key: environment variable first, then config.json."""
+def _get_key(name: str, override: str = "") -> str:
+    """Resolve an API key: override first, then env, then config.json."""
+    if override:
+        return override
     val = os.environ.get(name)
     if val:
         return val
@@ -85,8 +89,8 @@ def _get_key(name: str) -> str:
     return ""
 
 
-def get_anthropic_key() -> str:
-    return _get_key("ANTHROPIC_API_KEY")
+def get_anthropic_key(override: str = "") -> str:
+    return _get_key("ANTHROPIC_API_KEY", override)
 
 
 # ─────────────────────────────────────────────────────
@@ -173,12 +177,12 @@ def get_claude_backend() -> str:
     )
 
 
-def get_elevenlabs_key() -> str:
-    return _get_key("ELEVENLABS_API_KEY")
+def get_elevenlabs_key(override: str = "") -> str:
+    return _get_key("ELEVENLABS_API_KEY", override)
 
 
-def get_gemini_key() -> str:
-    return _get_key("GEMINI_API_KEY")
+def get_gemini_key(override: str = "") -> str:
+    return _get_key("GEMINI_API_KEY", override)
 
 
 def get_youtube_token_path() -> Path:
@@ -259,3 +263,28 @@ def run_setup():
 
     print("\n  Setup complete! Re-run your pipeline command to continue.\n")
     sys.exit(0)
+
+
+# ─────────────────────────────────────────────────────
+# Per-job configuration for SaaS adapter
+# ─────────────────────────────────────────────────────
+@dataclass
+class JobConfig:
+    """Per-job configuration for SaaS adapter. Injected instead of reading global config."""
+    job_id: str = ""
+    work_dir: Path = None
+    topic: str = ""
+    context: str = ""
+    anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+    elevenlabs_api_key: str = ""
+    voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
+    language: str = "en"
+    caption_style: str = "yellow_highlight"
+    music_genre: str = "auto"
+    video_width: int = 1080
+    video_height: int = 1920
+    youtube_access_token: str = ""
+    youtube_refresh_token: str = ""
+    on_progress: Optional[Callable] = None
+    on_log: Optional[Callable] = None

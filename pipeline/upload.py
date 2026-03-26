@@ -14,19 +14,34 @@ def upload_to_youtube(
     srt_path: Path = None,
     lang: str = "en",
     thumbnail_path: Path = None,
+    config=None,
 ) -> str:
-    """Upload video to YouTube with metadata, captions, and optional thumbnail."""
+    """Upload video to YouTube with metadata, captions, and optional thumbnail.
+
+    When config is provided with youtube_access_token, builds credentials from
+    the injected token. Otherwise uses existing file-based OAuth flow.
+    """
     from google.oauth2.credentials import Credentials
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload
 
-    token_path = get_youtube_token_path()
-    creds = Credentials.from_authorized_user_file(str(token_path))
+    if config and config.youtube_access_token:
+        # Build credentials from injected SaaS tokens
+        creds = Credentials(
+            token=config.youtube_access_token,
+            refresh_token=config.youtube_refresh_token or None,
+        )
+    else:
+        # Existing file-based OAuth flow
+        token_path = get_youtube_token_path()
+        creds = Credentials.from_authorized_user_file(str(token_path))
+
     if creds.expired:
         if creds.refresh_token:
             creds.refresh(Request())
-            write_secret_file(token_path, creds.to_json())
+            if not (config and config.youtube_access_token):
+                write_secret_file(token_path, creds.to_json())
         else:
             raise RuntimeError(
                 "YouTube OAuth token is expired and has no refresh token.\n"

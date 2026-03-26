@@ -31,7 +31,7 @@ def _call_claude(prompt: str) -> str:
         return call_claude_cli(prompt)
 
 
-def generate_draft(news: str, channel_context: str = "") -> dict:
+def generate_draft(news: str, channel_context: str = "", config=None) -> dict:
     """Research topic + generate draft via Claude."""
     research = research_topic(news)
 
@@ -63,7 +63,18 @@ Output JSON exactly:
   "thumbnail_prompt": "..."
 }}"""
 
-    raw = _call_claude(prompt)
+    # Use injected config for Claude when available
+    if config and config.anthropic_api_key:
+        import anthropic
+        client = anthropic.Anthropic(api_key=config.anthropic_api_key)
+        msg = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = msg.content[0].text.strip()
+    else:
+        raw = _call_claude(prompt)
 
     if raw.startswith("```"):
         raw = raw.split("```")[1]
