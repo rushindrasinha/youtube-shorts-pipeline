@@ -36,6 +36,12 @@ app.config_from_object({
 
     # Connection settings
     "broker_connection_retry_on_startup": False,
+    "broker_connection_retry": False,
+    "redis_retry_on_timeout": False,
+    "result_backend_transport_options": {
+        "retry_on_timeout": False,
+        "max_retries": 0,
+    },
 })
 
 
