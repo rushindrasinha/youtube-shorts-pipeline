@@ -115,6 +115,7 @@ doesn't pay the API costs:
 | [09-deployment](09-deployment.md) | Docker, CI/CD, infrastructure, monitoring |
 | [10-agency-features](10-agency-features.md) | Multi-team, white-label, agency-specific features |
 | [11-implementation-roadmap](11-implementation-roadmap.md) | Phased roadmap with milestones and deliverables |
+| [12-agent-execution-plan](12-agent-execution-plan.md) | Phase 0 agent team brief — exact files, code patterns, verification steps |
 
 ## Key Decisions
 
