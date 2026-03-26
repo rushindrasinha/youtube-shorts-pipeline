@@ -116,6 +116,13 @@ def client(db_session):
     from saas.main import create_app
     from saas.api.deps import get_db
 
+    # Set Celery to eager mode so tasks run in-process without Redis
+    from saas.workers.celery_app import app as celery_app
+    celery_app.conf.update(
+        task_always_eager=True,
+        task_eager_propagates=False,
+    )
+
     app = create_app()
 
     def _override_get_db():
