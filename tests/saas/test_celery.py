@@ -3,8 +3,8 @@
 import sys
 import os
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
-from uuid import uuid4
+from unittest.mock import MagicMock, patch, PropertyMock
+from uuid import UUID
 
 import pytest
 from sqlalchemy import create_engine, event, text
@@ -23,14 +23,40 @@ from saas.services.auth_service import hash_password
 @pytest.fixture(scope="function")
 def engine():
     """In-memory SQLite engine for testing."""
+    import sqlite3
+    from uuid import UUID as PyUUID
     from sqlalchemy.dialects.postgresql import ARRAY
     from sqlalchemy.ext.compiler import compiles
+    from sqlalchemy import Uuid
+    from sqlalchemy.pool import StaticPool
 
     @compiles(ARRAY, "sqlite")
     def _compile_array_sqlite(type_, compiler, **kw):
         return "TEXT"
 
-    eng = create_engine("sqlite:///:memory:")
+    sqlite3.register_adapter(PyUUID, lambda u: str(u))
+
+    def _patched_bind_processor(self, dialect):
+        def process(value):
+            if value is None:
+                return value
+            if isinstance(value, str):
+                try:
+                    value = PyUUID(value)
+                except ValueError:
+                    return value
+            if hasattr(value, 'hex'):
+                return value.hex
+            return str(value)
+        return process
+
+    Uuid.bind_processor = _patched_bind_processor
+
+    eng = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
 
     @event.listens_for(eng, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -107,7 +133,6 @@ def _create_user_and_job(db):
     db.add(job)
     db.flush()
 
-    # Create initial stages
     for stage_name in ["research", "draft", "broll", "voiceover", "captions", "music", "assemble", "thumbnail"]:
         stage = JobStage(job_id=job.id, stage_name=stage_name, status="pending")
         db.add(stage)
@@ -117,154 +142,128 @@ def _create_user_and_job(db):
     return user, job
 
 
+class _NonClosingSession:
+    """Wraps a session but makes close() a no-op so tests can verify state."""
+
+    def __init__(self, session):
+        self._session = session
+
+    def close(self):
+        pass  # Don't actually close -- test needs to read data after
+
+    def __getattr__(self, name):
+        return getattr(self._session, name)
+
+
+def _run_task(db, engine, job_id, pipeline_behavior):
+    """Run the pipeline task with mocked dependencies.
+
+    pipeline_behavior: either a dict (return value) or an exception (side effect).
+    """
+    mock_redis_client = MagicMock()
+    mock_redis_client.close = MagicMock()
+
+    mock_pipeline_instance = MagicMock()
+    if isinstance(pipeline_behavior, Exception):
+        mock_pipeline_instance.run.side_effect = pipeline_behavior
+    else:
+        mock_pipeline_instance.run.return_value = pipeline_behavior
+
+    # Wrap session so close() is a no-op
+    wrapped_db = _NonClosingSession(db)
+
+    # Wrap engine so dispose() is a no-op (test needs the connection alive)
+    mock_engine = MagicMock(wraps=engine)
+    mock_engine.dispose = MagicMock()  # no-op
+
+    with patch("saas.tasks.pipeline_task.create_engine", return_value=mock_engine), \
+         patch("saas.tasks.pipeline_task.SASession", return_value=wrapped_db), \
+         patch("saas.tasks.pipeline_task.redis") as mock_redis_mod, \
+         patch("saas.tasks.pipeline_task.resolve_api_keys") as mock_keys, \
+         patch("pipeline.adapter.PipelineJob", return_value=mock_pipeline_instance):
+
+        mock_redis_mod.from_url.return_value = mock_redis_client
+        mock_keys.return_value = {
+            "anthropic": "test-key",
+            "gemini": "test-key",
+            "elevenlabs": "test-key",
+        }
+
+        from saas.tasks.pipeline_task import run_video_pipeline
+
+        run_video_pipeline.push_request(
+            id="test-celery-task-id",
+            retries=1,
+        )
+        try:
+            run_video_pipeline.run(str(job_id))
+        finally:
+            run_video_pipeline.pop_request()
+
+    return mock_redis_client, mock_pipeline_instance
+
+
 class TestPipelineTaskUpdatesProgress:
-    @patch("saas.tasks.pipeline_task.redis")
-    @patch("saas.tasks.pipeline_task.create_engine")
-    def test_pipeline_task_updates_progress(self, mock_create_engine, mock_redis_mod, engine, db):
-        """Mock PipelineJob, verify DB updates and Redis publish."""
+    def test_pipeline_task_updates_progress(self, engine, db):
+        """Mock PipelineJob to succeed, verify DB updates and Redis publish."""
         user, job = _create_user_and_job(db)
 
-        # Make create_engine return our test engine
-        mock_create_engine.return_value = engine
+        mock_redis, mock_pipeline = _run_task(
+            db, engine, job.id,
+            pipeline_behavior={
+                "status": "completed",
+                "job_id": str(job.id),
+                "draft": {"script": "Test script", "youtube_title": "Test"},
+                "video_path": "/tmp/test.mp4",
+                "thumbnail_path": "/tmp/thumb.png",
+                "srt_path": "/tmp/captions.srt",
+            },
+        )
 
-        # Mock SASession to return our test session
-        mock_redis_client = MagicMock()
-        mock_redis_mod.from_url.return_value = mock_redis_client
+        # Verify job was updated in DB
+        db.expire_all()
+        job = db.query(Job).filter(Job.id == job.id).first()
+        assert job.status == "completed"
+        assert job.progress_pct == 100
+        assert job.completed_at is not None
 
-        # Mock PipelineJob.run() to return success and call the progress callback
-        with patch("saas.tasks.pipeline_task.PipelineJob") as MockPipeline, \
-             patch("saas.tasks.pipeline_task.SASession") as MockSession, \
-             patch("saas.tasks.pipeline_task.resolve_api_keys") as mock_keys:
+        # Verify Redis publish was called (for SSE delivery)
+        assert mock_redis.publish.called
 
-            mock_keys.return_value = {
-                "anthropic": "test-key",
-                "gemini": "test-key",
-                "elevenlabs": "test-key",
-            }
-
-            # The session mock returns our db session
-            MockSession.return_value = db
-
-            def mock_run():
-                return {
-                    "status": "completed",
-                    "job_id": str(job.id),
-                    "draft": {"script": "Test script", "youtube_title": "Test"},
-                    "video_path": "/tmp/test.mp4",
-                    "thumbnail_path": "/tmp/thumb.png",
-                    "srt_path": "/tmp/captions.srt",
-                }
-
-            mock_pipeline_instance = MagicMock()
-            mock_pipeline_instance.run.side_effect = mock_run
-            MockPipeline.return_value = mock_pipeline_instance
-
-            # Import and call the task function directly (not via Celery)
-            from saas.tasks.pipeline_task import run_video_pipeline
-
-            # Create a mock self (Celery task context)
-            mock_self = MagicMock()
-            mock_self.request.id = "test-celery-task-id"
-            mock_self.request.retries = 0
-            mock_self.max_retries = 1
-
-            # Call the underlying function directly
-            run_video_pipeline.__wrapped__(mock_self, str(job.id))
-
-            # Verify job was updated
-            db.refresh(job)
-            assert job.status == "completed"
-            assert job.progress_pct == 100
-            assert job.completed_at is not None
-
-            # Verify Redis publish was called
-            assert mock_redis_client.publish.called
+        # Verify PipelineJob.run() was called
+        assert mock_pipeline.run.called
 
 
 class TestPipelineTaskHandlesFailure:
-    @patch("saas.tasks.pipeline_task.redis")
-    @patch("saas.tasks.pipeline_task.create_engine")
-    def test_pipeline_task_handles_failure(self, mock_create_engine, mock_redis_mod, engine, db):
-        """Mock PipelineJob to raise, verify error is stored."""
+    def test_pipeline_task_handles_failure(self, engine, db):
+        """Mock PipelineJob to raise exception, verify error stored."""
         user, job = _create_user_and_job(db)
 
-        mock_create_engine.return_value = engine
+        mock_redis, _ = _run_task(
+            db, engine, job.id,
+            pipeline_behavior=RuntimeError("ElevenLabs API rate limited"),
+        )
 
-        mock_redis_client = MagicMock()
-        mock_redis_mod.from_url.return_value = mock_redis_client
+        # Verify job was marked as failed
+        db.expire_all()
+        job = db.query(Job).filter(Job.id == job.id).first()
+        assert job.status == "failed"
+        assert "ElevenLabs API rate limited" in job.error_message
+        assert job.completed_at is not None
 
-        with patch("saas.tasks.pipeline_task.PipelineJob") as MockPipeline, \
-             patch("saas.tasks.pipeline_task.SASession") as MockSession, \
-             patch("saas.tasks.pipeline_task.resolve_api_keys") as mock_keys:
-
-            mock_keys.return_value = {
-                "anthropic": "test-key",
-                "gemini": "test-key",
-                "elevenlabs": "test-key",
-            }
-
-            MockSession.return_value = db
-
-            # Pipeline raises an exception
-            mock_pipeline_instance = MagicMock()
-            mock_pipeline_instance.run.side_effect = RuntimeError("ElevenLabs API rate limited")
-            MockPipeline.return_value = mock_pipeline_instance
-
-            from saas.tasks.pipeline_task import run_video_pipeline
-
-            mock_self = MagicMock()
-            mock_self.request.id = "test-celery-task-id"
-            mock_self.request.retries = 1  # Already retried once
-            mock_self.max_retries = 1
-
-            # Should not raise (retries exhausted)
-            run_video_pipeline.__wrapped__(mock_self, str(job.id))
-
-            # Verify job was marked as failed
-            db.refresh(job)
-            assert job.status == "failed"
-            assert "ElevenLabs API rate limited" in job.error_message
-            assert job.completed_at is not None
-
-    @patch("saas.tasks.pipeline_task.redis")
-    @patch("saas.tasks.pipeline_task.create_engine")
-    def test_pipeline_task_pipeline_returns_failed(self, mock_create_engine, mock_redis_mod, engine, db):
-        """Pipeline returns failed status (not an exception)."""
+    def test_pipeline_task_pipeline_returns_failed(self, engine, db):
+        """Pipeline returns failed status (graceful failure, not exception)."""
         user, job = _create_user_and_job(db)
 
-        mock_create_engine.return_value = engine
-
-        mock_redis_client = MagicMock()
-        mock_redis_mod.from_url.return_value = mock_redis_client
-
-        with patch("saas.tasks.pipeline_task.PipelineJob") as MockPipeline, \
-             patch("saas.tasks.pipeline_task.SASession") as MockSession, \
-             patch("saas.tasks.pipeline_task.resolve_api_keys") as mock_keys:
-
-            mock_keys.return_value = {
-                "anthropic": "test-key",
-                "gemini": "test-key",
-                "elevenlabs": "test-key",
-            }
-
-            MockSession.return_value = db
-
-            mock_pipeline_instance = MagicMock()
-            mock_pipeline_instance.run.return_value = {
+        mock_redis, _ = _run_task(
+            db, engine, job.id,
+            pipeline_behavior={
                 "status": "failed",
                 "error": "Gemini image generation failed",
-            }
-            MockPipeline.return_value = mock_pipeline_instance
+            },
+        )
 
-            from saas.tasks.pipeline_task import run_video_pipeline
-
-            mock_self = MagicMock()
-            mock_self.request.id = "test-celery-task-id"
-            mock_self.request.retries = 0
-            mock_self.max_retries = 1
-
-            run_video_pipeline.__wrapped__(mock_self, str(job.id))
-
-            db.refresh(job)
-            assert job.status == "failed"
-            assert "Gemini image generation failed" in job.error_message
+        db.expire_all()
+        job = db.query(Job).filter(Job.id == job.id).first()
+        assert job.status == "failed"
+        assert "Gemini image generation failed" in job.error_message

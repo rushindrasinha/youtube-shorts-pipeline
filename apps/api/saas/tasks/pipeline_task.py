@@ -13,6 +13,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session as SASession
 
 from saas.workers.celery_app import app
+from saas.settings import settings
+from saas.models.job import Job, JobStage
+from saas.services.key_service import resolve_api_keys
 
 logger = get_task_logger(__name__)
 
@@ -28,9 +31,6 @@ def run_video_pipeline(self, job_id: str):
     4. Updates job record with results
     5. Publishes progress events to Redis for SSE delivery
     """
-    from saas.settings import settings
-    from saas.models.job import Job, JobStage
-    from saas.services.key_service import resolve_api_keys
     from pipeline.adapter import PipelineJob
     from pipeline.config import JobConfig
 

@@ -205,6 +205,7 @@ async def retry_failed_job(
         task = run_video_pipeline.apply_async(
             args=[str(job.id)],
             queue="video",
+            retry=False,
         )
         job.celery_task_id = task.id
         db.commit()
