@@ -27,6 +27,14 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
 
+    # YouTube OAuth (platform app for channel connections)
+    YOUTUBE_CLIENT_ID: str = ""
+    YOUTUBE_CLIENT_SECRET: str = ""
+
+    # Monitoring
+    SENTRY_DSN: str = ""
+    LOG_LEVEL: str = "INFO"
+
     def validate_production(self):
         """Raise if using default secrets in non-development mode."""
         if self.ENVIRONMENT != "development":

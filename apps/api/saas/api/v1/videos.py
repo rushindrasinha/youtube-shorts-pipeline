@@ -210,4 +210,14 @@ def upload_to_yt(video_id: str, body: UploadYouTubeRequest, user=Depends(get_cur
     channel = db.query(YouTubeChannel).filter(YouTubeChannel.id == _UUID(body.channel_id)).first()
     if not channel:
         raise HTTPException(404, "Channel not found")
+    # Verify user owns or has team access to this channel
+    if channel.user_id != user.id:
+        if not channel.team_id:
+            raise HTTPException(403, "Not your channel")
+        from ...models.team import TeamMember
+        member = db.query(TeamMember).filter(
+            TeamMember.team_id == channel.team_id, TeamMember.user_id == user.id
+        ).first()
+        if not member:
+            raise HTTPException(403, "No access to this channel")
     return {"status": "upload_queued", "video_id": str(video.id)}

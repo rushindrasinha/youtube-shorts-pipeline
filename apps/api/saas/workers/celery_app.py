@@ -1,11 +1,14 @@
 from celery import Celery
 from celery.signals import worker_init
+from saas.settings import settings
 
 app = Celery("shortfactory")
 
+_redis_base = settings.REDIS_URL.rstrip("/0").rstrip("/")
+
 app.config_from_object({
-    "broker_url": "redis://localhost:6379/0",
-    "result_backend": "redis://localhost:6379/1",
+    "broker_url": settings.REDIS_URL,
+    "result_backend": f"{_redis_base}/1",
     "task_serializer": "json",
     "result_serializer": "json",
     "accept_content": ["json"],

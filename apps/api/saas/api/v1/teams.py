@@ -446,6 +446,8 @@ def accept_invite(token: str, user=Depends(get_current_user), db: Session = Depe
         raise HTTPException(400, "Invalid or expired invite")
     if invite.expires_at < datetime.now(timezone.utc):
         raise HTTPException(400, "Invite expired")
+    if invite.email and user.email != invite.email:
+        raise HTTPException(403, "This invite was sent to a different email address")
     existing = db.query(TeamMember).filter(TeamMember.team_id == invite.team_id, TeamMember.user_id == user.id).first()
     if existing:
         raise HTTPException(409, "Already a team member")
