@@ -347,7 +347,25 @@ Ready for users.
 
 ---
 
-## Phase 5: Growth (Week 13+)
+## Phase 4.5: Remaining Fixes & Feature Completeness (Week 12-13)
+
+**Goal:** Fix all bugs, implement all missing spec endpoints, harden security.
+
+See **[13-remaining-features.md](13-remaining-features.md)** for the full execution brief
+with 35 items across 4 sub-phases:
+
+- **Phase A (Critical):** Celery Beat schedule, admin stats fix, rate limiting, Alembic
+  migrations, PATCH privilege escalation, usage record crash, SSE keepalive
+- **Phase B (Endpoints):** Password reset, email verification, user usage/API keys,
+  billing invoices, YouTube upload, topic refresh, admin jobs, team channels/invites
+- **Phase C (Quality):** JWT blacklist, webhook idempotency, error standardization,
+  pagination consistency, exception narrowing, DRY extraction, indexes, dep pinning
+- **Phase D (Infra):** Docker full stack, scheduled jobs, email service, admin
+  dashboard data, audit logging, team role fix
+
+---
+
+## Phase 5: Growth (Week 14+)
 
 **Goal:** Advanced features, optimization, scale based on user feedback.
 
