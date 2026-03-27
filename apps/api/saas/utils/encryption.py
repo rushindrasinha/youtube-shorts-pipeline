@@ -8,7 +8,10 @@ _fernet = None
 def get_fernet() -> Fernet:
     global _fernet
     if _fernet is None:
-        _fernet = Fernet(settings.ENCRYPTION_KEY.encode())
+        key = settings.ENCRYPTION_KEY
+        if key == "change-me-in-production":
+            raise ValueError("ENCRYPTION_KEY not configured")
+        _fernet = Fernet(key.encode())
     return _fernet
 
 

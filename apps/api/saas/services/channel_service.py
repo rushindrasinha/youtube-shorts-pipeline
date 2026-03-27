@@ -1,5 +1,7 @@
 """YouTube channel connection service — OAuth flow, token management."""
 
+import hashlib
+import hmac
 import json
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -30,12 +32,9 @@ class ChannelService:
         The state param encodes user_id and optional team_id so the
         callback can associate the channel with the correct owner.
         """
-        state_data = {
-            "user_id": str(user_id),
-            "team_id": str(team_id) if team_id else None,
-            "nonce": secrets.token_urlsafe(16),
-        }
-        state = json.dumps(state_data)
+        state_data = json.dumps({"user_id": str(user_id), "team_id": str(team_id) if team_id else None})
+        signature = hmac.new(settings.JWT_SECRET_KEY.encode(), state_data.encode(), hashlib.sha256).hexdigest()
+        state = f"{state_data}|{signature}"
 
         params = {
             "client_id": settings.GOOGLE_CLIENT_ID,
@@ -58,9 +57,13 @@ class ChannelService:
         """
         import httpx
 
-        state_data = json.loads(state)
-        user_id = state_data["user_id"]
-        team_id = state_data.get("team_id")
+        state_data, signature = state.rsplit("|", 1)
+        expected = hmac.new(settings.JWT_SECRET_KEY.encode(), state_data.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            raise ValueError("Invalid OAuth state signature")
+        parsed_state = json.loads(state_data)
+        user_id = parsed_state["user_id"]
+        team_id = parsed_state.get("team_id")
 
         # Exchange code for tokens
         token_response = httpx.post(

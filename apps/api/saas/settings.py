@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = "shortfactory-media"
     S3_PUBLIC_URL: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
+    ALLOWED_ORIGINS: str = "http://localhost:3000"  # comma-separated for production
     ENVIRONMENT: str = "development"
 
     # OAuth social login
@@ -25,6 +26,14 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
+
+    def validate_production(self):
+        """Raise if using default secrets in non-development mode."""
+        if self.ENVIRONMENT != "development":
+            if self.JWT_SECRET_KEY == "change-me-in-production":
+                raise ValueError("JWT_SECRET_KEY must be set in production!")
+            if self.ENCRYPTION_KEY == "change-me-in-production":
+                raise ValueError("ENCRYPTION_KEY must be set in production!")
 
     class Config:
         env_file = ".env"

@@ -46,14 +46,14 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-zinc-400">
             &copy; 2026 ShortFactory. All rights reserved.
           </p>
           <div className="flex gap-4">
             {/* Twitter/X */}
             <a
               href="#"
-              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="text-zinc-400 hover:text-zinc-400 transition-colors"
               aria-label="Twitter"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -63,7 +63,7 @@ export function Footer() {
             {/* GitHub */}
             <a
               href="#"
-              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="text-zinc-400 hover:text-zinc-400 transition-colors"
               aria-label="GitHub"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@ export function Footer() {
             {/* YouTube */}
             <a
               href="#"
-              className="text-zinc-600 hover:text-zinc-400 transition-colors"
+              className="text-zinc-400 hover:text-zinc-400 transition-colors"
               aria-label="YouTube"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

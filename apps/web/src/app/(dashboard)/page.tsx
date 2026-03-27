@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 const stats = [
   { label: 'Videos this month', value: '12 / 30' },
@@ -33,24 +34,6 @@ const recentJobs = [
     progress_pct: 100,
   },
 ]
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    queued: 'bg-yellow-500/10 text-yellow-400',
-    running: 'bg-violet-500/10 text-violet-400',
-    completed: 'bg-green-500/10 text-green-400',
-    failed: 'bg-red-500/10 text-red-400',
-    canceled: 'bg-zinc-500/10 text-zinc-400',
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${styles[status] || styles.canceled}`}
-    >
-      {status}
-    </span>
-  )
-}
 
 export default function DashboardPage() {
   return (

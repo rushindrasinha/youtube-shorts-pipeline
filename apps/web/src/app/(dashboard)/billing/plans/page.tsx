@@ -79,7 +79,7 @@ const CURRENT_PLAN = 'creator'
 function FeatureRow({ label, included }: { label: string; included: boolean }) {
   return (
     <li className="flex items-center gap-2 text-sm">
-      <span className={included ? 'text-green-400' : 'text-zinc-600'}>
+      <span className={included ? 'text-green-400' : 'text-zinc-400'}>
         {included ? '\u2713' : '\u2717'}
       </span>
       <span className={included ? 'text-zinc-300' : 'text-zinc-500'}>{label}</span>

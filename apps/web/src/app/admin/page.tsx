@@ -4,6 +4,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@repo/ui'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 const systemStats = [
   { label: 'Total Users', value: '—', description: 'Registered accounts' },
@@ -39,23 +40,6 @@ const recentJobs = [
   },
 ]
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    queued: 'bg-yellow-500/10 text-yellow-400',
-    running: 'bg-violet-500/10 text-violet-400',
-    completed: 'bg-green-500/10 text-green-400',
-    failed: 'bg-red-500/10 text-red-400',
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${styles[status] || 'bg-zinc-500/10 text-zinc-400'}`}
-    >
-      {status}
-    </span>
-  )
-}
-
 export default function AdminDashboard() {
   return (
     <div className="space-y-8">
@@ -77,7 +61,7 @@ export default function AdminDashboard() {
               <p className="mt-1 text-2xl font-semibold text-zinc-50 font-display">
                 {stat.value}
               </p>
-              <p className="mt-1 text-xs text-zinc-600">{stat.description}</p>
+              <p className="mt-1 text-xs text-zinc-400">{stat.description}</p>
             </CardContent>
           </Card>
         ))}

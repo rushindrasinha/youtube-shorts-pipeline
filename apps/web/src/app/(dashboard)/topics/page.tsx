@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from '@repo/ui'
+import { api } from '@/lib/api'
 
 interface TrendingTopic {
   title: string
@@ -28,9 +29,9 @@ export default function TopicsPage() {
   const [creating, setCreating] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/v1/topics/trending', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => setTopics(data.items || []))
+    api.topics
+      .trending()
+      .then((data: any) => setTopics(data.items || []))
       .catch(() => setTopics([]))
       .finally(() => setLoading(false))
   }, [])
@@ -38,16 +39,10 @@ export default function TopicsPage() {
   const handleQuickCreate = async (title: string) => {
     setCreating(title)
     try {
-      const res = await fetch('/api/v1/topics/quick-create', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic_title: title }),
-      })
-      if (res.ok) {
-        const job = await res.json()
-        window.location.href = `/dashboard/jobs/${job.id}`
-      }
+      const job = await api.topics.quickCreate(title)
+      window.location.href = `/dashboard/jobs/${(job as any).id}`
+    } catch {
+      // Handle error
     } finally {
       setCreating(null)
     }

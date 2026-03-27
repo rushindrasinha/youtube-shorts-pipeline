@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
+import { api } from '@/lib/api'
 
 interface Subscription {
   plan: {
@@ -94,10 +95,9 @@ export default function BillingPage() {
   async function handleManageBilling() {
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/billing/portal', { method: 'POST' })
-      const data = await res.json()
-      if (data.portal_url) {
-        window.location.href = data.portal_url
+      const data = await api.billing.portal()
+      if (data.url) {
+        window.location.href = data.url
       }
     } catch {
       // Handle error

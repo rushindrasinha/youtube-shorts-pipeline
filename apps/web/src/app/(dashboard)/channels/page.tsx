@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from '@repo/ui'
+import { api } from '@/lib/api'
 
 interface Channel {
   id: string
@@ -21,9 +22,9 @@ export default function ChannelsPage() {
   const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
-    fetch('/api/v1/channels', { credentials: 'include' })
-      .then((res) => res.json())
-      .then((data) => setChannels(data.items || []))
+    api.channels
+      .list()
+      .then((data) => setChannels((data as any).items || data || []))
       .catch(() => setChannels([]))
       .finally(() => setLoading(false))
   }, [])
@@ -31,28 +32,21 @@ export default function ChannelsPage() {
   const handleConnect = async () => {
     setConnecting(true)
     try {
-      const res = await fetch('/api/v1/channels/connect', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        window.location.href = data.auth_url
-      }
+      const data = await api.channels.connect()
+      window.location.href = data.auth_url
+    } catch {
+      // Handle error
     } finally {
       setConnecting(false)
     }
   }
 
   const handleDisconnect = async (channelId: string) => {
-    const res = await fetch(`/api/v1/channels/${channelId}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-    if (res.ok) {
+    try {
+      await api.channels.disconnect(channelId)
       setChannels((prev) => prev.filter((c) => c.id !== channelId))
+    } catch {
+      // Handle error
     }
   }
 

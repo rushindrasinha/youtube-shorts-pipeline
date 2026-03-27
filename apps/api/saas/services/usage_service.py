@@ -41,6 +41,12 @@ def check_can_create_job(db: Session, user) -> tuple[bool, str]:
     now = datetime.now(timezone.utc)
     period_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
+    # Lock the usage record to prevent race conditions with concurrent requests
+    usage = db.query(UsageRecord).filter(
+        UsageRecord.user_id == user.id,
+        UsageRecord.period_start == period_start.date(),
+    ).with_for_update().first()
+
     jobs_this_month = (
         db.query(Job)
         .filter(

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from '@repo/ui'
+import { api } from '@/lib/api'
 
 interface Team {
   id: string
@@ -22,25 +23,21 @@ export default function TeamsPage() {
   const [newColor, setNewColor] = useState('#6366F1')
 
   useEffect(() => {
-    fetch('/api/v1/teams', { credentials: 'include' })
-      .then((res) => res.json())
+    api.teams
+      .list()
       .then((data) => setTeams(data.items || []))
       .catch(() => setTeams([]))
       .finally(() => setLoading(false))
   }, [])
 
   const handleCreate = async () => {
-    const res = await fetch('/api/v1/teams', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName, brand_color: newColor }),
-    })
-    if (res.ok) {
-      const team = await res.json()
-      setTeams((prev) => [...prev, team])
+    try {
+      const team = await api.teams.create({ name: newName })
+      setTeams((prev) => [...prev, team as Team])
       setShowCreate(false)
       setNewName('')
+    } catch {
+      // Handle error
     }
   }
 

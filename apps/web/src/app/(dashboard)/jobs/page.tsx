@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from '@repo/ui'
+import { StatusBadge } from '@/components/shared/status-badge'
 
 type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'canceled'
 
@@ -77,27 +78,6 @@ const FILTER_TABS: { label: string; value: JobStatus | 'all' }[] = [
   { label: 'Completed', value: 'completed' },
   { label: 'Failed', value: 'failed' },
 ]
-
-function StatusBadge({ status }: { status: JobStatus }) {
-  const styles: Record<JobStatus, string> = {
-    queued: 'bg-yellow-500/10 text-yellow-400',
-    running: 'bg-violet-500/10 text-violet-400',
-    completed: 'bg-green-500/10 text-green-400',
-    failed: 'bg-red-500/10 text-red-400',
-    canceled: 'bg-zinc-500/10 text-zinc-400',
-  }
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize',
-        styles[status],
-      )}
-    >
-      {status}
-    </span>
-  )
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {

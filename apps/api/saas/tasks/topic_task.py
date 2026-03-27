@@ -29,16 +29,7 @@ def refresh_trending_topics(self):
         now = datetime.now(timezone.utc)
         expiry = now + timedelta(minutes=15)
 
-        # 1. Clear expired topics
-        expired_count = (
-            db.query(TrendingTopicCache)
-            .filter(TrendingTopicCache.expires_at <= now)
-            .delete(synchronize_session=False)
-        )
-        db.commit()
-        logger.info(f"Cleared {expired_count} expired topics")
-
-        # 2. Fetch fresh topics from TopicEngine
+        # 1. Fetch fresh topics from TopicEngine
         try:
             from pipeline.topics import TopicEngine
 
@@ -53,6 +44,17 @@ def refresh_trending_topics(self):
         except Exception as e:
             logger.error(f"Failed to fetch topics from TopicEngine: {e}")
             raw_topics = []
+
+        # 2. Only clear expired topics if we got new data
+        expired_count = 0
+        if raw_topics:
+            expired_count = (
+                db.query(TrendingTopicCache)
+                .filter(TrendingTopicCache.expires_at <= now)
+                .delete(synchronize_session=False)
+            )
+            db.commit()
+            logger.info(f"Cleared {expired_count} expired topics")
 
         # 3. Insert fresh topics into cache
         inserted = 0

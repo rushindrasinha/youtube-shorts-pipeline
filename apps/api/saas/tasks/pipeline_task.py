@@ -171,9 +171,9 @@ def _update_job_progress(db, job, stage, status, pct, artifacts):
 def _publish_progress(job_id: str, stage: str, status: str, pct: int):
     """Publish progress event to Redis pub/sub for SSE delivery."""
     try:
-        r = redis.from_url("redis://localhost:6379/0")
+        r = redis.from_url(settings.REDIS_URL)
         r.publish(f"job:{job_id}", json.dumps({
-            "type": f"stage_{status}" if status in ("running", "done") else f"job_{status}",
+            "type": f"stage_{'started' if status == 'running' else 'completed'}" if status in ("running", "done") else f"job_{status}",
             "stage": stage,
             "progress_pct": pct,
             "timestamp": datetime.now(timezone.utc).isoformat(),

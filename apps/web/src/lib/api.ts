@@ -85,4 +85,48 @@ export const api = {
     get: (id: string) => apiFetch<JobDetailResponse>(`/jobs/${id}`),
     cancel: (id: string) => apiFetch(`/jobs/${id}`, { method: 'DELETE' }),
   },
+  teams: {
+    list: () => apiFetch<PaginatedResponse<any>>('/teams'),
+    create: (data: { name: string }) =>
+      apiFetch('/teams', { method: 'POST', body: JSON.stringify(data) }),
+    get: (id: string) => apiFetch(`/teams/${id}`),
+    invite: (teamId: string, data: { email: string; role: string }) =>
+      apiFetch(`/teams/${teamId}/members/invite`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+  },
+  channels: {
+    list: () => apiFetch<any[]>('/channels'),
+    connect: () =>
+      apiFetch<{ auth_url: string }>('/channels/connect', { method: 'POST' }),
+    disconnect: (id: string) =>
+      apiFetch(`/channels/${id}`, { method: 'DELETE' }),
+  },
+  topics: {
+    trending: () => apiFetch<any>('/topics/trending'),
+    quickCreate: (topic: string) =>
+      apiFetch('/topics/quick-create', {
+        method: 'POST',
+        body: JSON.stringify({ topic_title: topic }),
+      }),
+  },
+  billing: {
+    plans: () => apiFetch<any[]>('/billing/plans'),
+    subscription: () => apiFetch<any>('/billing/subscription'),
+    checkout: (plan: string) =>
+      apiFetch<{ checkout_url: string }>('/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan }),
+      }),
+    portal: () =>
+      apiFetch<{ url: string }>('/billing/portal', { method: 'POST' }),
+  },
+  videos: {
+    list: () => apiFetch<PaginatedResponse<any>>('/videos'),
+    get: (id: string) => apiFetch<any>(`/videos/${id}`),
+    download: (id: string) =>
+      apiFetch<{ url: string }>(`/videos/${id}/download`),
+    delete: (id: string) => apiFetch(`/videos/${id}`, { method: 'DELETE' }),
+  },
 }

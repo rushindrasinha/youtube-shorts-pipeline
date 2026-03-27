@@ -181,7 +181,7 @@ export default function ProviderKeysPage() {
                     <div className="mt-2 text-sm text-zinc-400">
                       <span className="font-mono">{connected.key_prefix}</span>
                       {connected.last_verified_at && (
-                        <span className="ml-3 text-zinc-600">
+                        <span className="ml-3 text-zinc-400">
                           Verified {formatDate(connected.last_verified_at)}
                         </span>
                       )}
@@ -195,7 +195,7 @@ export default function ProviderKeysPage() {
                         value={keyInput}
                         onChange={(e) => setKeyInput(e.target.value)}
                         placeholder={provider.placeholder}
-                        className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-violet-500/50 focus:outline-none"
+                        className="flex-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-400 focus:border-violet-500/50 focus:outline-none"
                       />
                       <Button
                         variant="primary"
