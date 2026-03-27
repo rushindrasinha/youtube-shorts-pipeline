@@ -34,19 +34,15 @@ def admin_stats(
     running_jobs = (
         db.query(func.count(Job.id)).filter(Job.status == "running").scalar() or 0
     )
-    total_revenue_cents = (
-        db.query(func.sum(Subscription.id)).scalar() or 0  # placeholder
-    )
-    total_cost = db.query(func.sum(Job.cost_usd)).scalar() or 0
+    total_cost = db.query(func.sum(Job.cost_usd)).filter(Job.status == "completed").scalar() or 0
 
     return {
         "total_users": total_users,
         "total_jobs": total_jobs,
         "completed_jobs": completed_jobs,
         "failed_jobs": failed_jobs,
-        "running_jobs": running_jobs,
-        "total_revenue_cents": total_revenue_cents,
-        "total_pipeline_cost_usd": float(total_cost),
+        "active_jobs": running_jobs,
+        "total_cost": float(total_cost),
     }
 
 

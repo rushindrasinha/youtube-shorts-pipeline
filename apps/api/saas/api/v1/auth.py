@@ -358,3 +358,73 @@ async def github_callback(request: Request, db: Session = Depends(get_db)):
     )
 
     return _set_social_auth_cookies(user)
+
+
+# ---------- Password Reset + Email Verification ----------
+
+from pydantic import BaseModel as _BaseModel
+from pydantic import EmailStr as _EmailStr
+from pydantic import Field as _Field
+from datetime import datetime, timedelta, timezone as _tz
+
+
+class ForgotPasswordRequest(_BaseModel):
+    email: _EmailStr
+
+
+class ResetPasswordRequest(_BaseModel):
+    token: str
+    new_password: str = _Field(..., min_length=8)
+
+
+class VerifyEmailRequest(_BaseModel):
+    token: str
+
+
+@router.post("/auth/forgot-password")
+def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Generate password reset token. Always returns ok to avoid email enumeration."""
+    user = db.query(User).filter(User.email == body.email).first()
+    if user:
+        from ...services.auth_service import SECRET_KEY, ALGORITHM
+        _token = jwt.encode(
+            {"sub": user.email, "type": "password_reset",
+             "exp": datetime.now(_tz.utc) + timedelta(hours=1)},
+            SECRET_KEY, algorithm=ALGORITHM,
+        )
+        # TODO: send email with _token via email_service
+    return {"status": "ok"}
+
+
+@router.post("/auth/reset-password")
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password using a valid reset token."""
+    try:
+        payload = verify_token(body.token)
+    except Exception:
+        raise HTTPException(400, "Invalid or expired reset token")
+    if payload.get("type") != "password_reset":
+        raise HTTPException(400, "Invalid token type")
+    user = db.query(User).filter(User.email == payload["sub"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.post("/auth/verify-email")
+def verify_email(body: VerifyEmailRequest, db: Session = Depends(get_db)):
+    """Verify email address with a verification token."""
+    try:
+        payload = verify_token(body.token)
+    except Exception:
+        raise HTTPException(400, "Invalid or expired verification token")
+    if payload.get("type") != "email_verify":
+        raise HTTPException(400, "Invalid token type")
+    user = db.query(User).filter(User.email == payload["sub"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.email_verified = True
+    db.commit()
+    return {"status": "verified"}

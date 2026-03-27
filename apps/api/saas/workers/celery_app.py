@@ -45,13 +45,23 @@ app.config_from_object({
 })
 
 
+app.conf.beat_schedule = {
+    "refresh-trending-topics": {
+        "task": "saas.tasks.topic_task.refresh_trending_topics",
+        "schedule": 900.0,  # Every 15 minutes
+    },
+    "cleanup-expired-media": {
+        "task": "saas.tasks.cleanup_task.cleanup_expired_media",
+        "schedule": 3600.0 * 24,  # Daily
+    },
+    "process-scheduled-jobs": {
+        "task": "saas.tasks.scheduler_task.process_scheduled_jobs",
+        "schedule": 60.0,  # Every minute
+    },
+}
+
+
 @worker_init.connect
 def init_worker(**kwargs):
-    """Called when a Celery worker starts.
-
-    NOTE: Whisper model is NOT pre-loaded here. It is cached at module level
-    in pipeline/captions.py (_get_whisper_model). Loading in two places wastes
-    memory and creates confusion about which global is used. The captions module
-    cache is the single source of truth.
-    """
+    """Called when a Celery worker starts."""
     print("Worker initialized.")
