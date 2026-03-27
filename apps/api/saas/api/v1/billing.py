@@ -105,3 +105,17 @@ async def create_portal(
             ).model_dump(),
         )
     return PortalResponse(portal_url=url)
+
+
+@router.get("/billing/invoices")
+def list_invoices(user=Depends(get_current_user)):
+    import stripe as _stripe
+    from ...settings import settings
+    _stripe.api_key = settings.STRIPE_SECRET_KEY
+    if not user.stripe_customer_id:
+        return {"invoices": []}
+    try:
+        invoices = _stripe.Invoice.list(customer=user.stripe_customer_id, limit=20)
+        return {"invoices": [{"id": i.id, "amount_cents": i.total, "status": i.status, "date": i.created} for i in invoices.data]}
+    except Exception:
+        return {"invoices": []}

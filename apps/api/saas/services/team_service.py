@@ -226,8 +226,8 @@ class TeamService:
             raise PermissionError("Admin role required to update roles")
 
         # Cannot promote to a role higher than your own
-        if ROLE_HIERARCHY.get(new_role, 0) >= ROLE_HIERARCHY.get(updater_role, 0):
-            raise PermissionError("Cannot assign a role equal to or higher than your own")
+        if ROLE_HIERARCHY.get(new_role, 0) > ROLE_HIERARCHY.get(updater_role, 0):
+            raise PermissionError("Cannot assign a role higher than your own")
 
         member.role = new_role
         self.db.commit()

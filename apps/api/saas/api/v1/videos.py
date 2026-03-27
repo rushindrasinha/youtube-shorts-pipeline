@@ -190,3 +190,24 @@ async def delete_video(
 
     db.delete(video)
     db.commit()
+
+
+from pydantic import BaseModel as _BM
+
+
+class UploadYouTubeRequest(_BM):
+    channel_id: str
+    privacy: str = "private"
+
+
+@router.post("/videos/{video_id}/upload-youtube")
+def upload_to_yt(video_id: str, body: UploadYouTubeRequest, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from uuid import UUID as _UUID
+    video = db.query(Video).filter(Video.id == _UUID(video_id), Video.user_id == user.id).first()
+    if not video:
+        raise HTTPException(404, "Video not found")
+    from ...models.channel import YouTubeChannel
+    channel = db.query(YouTubeChannel).filter(YouTubeChannel.id == _UUID(body.channel_id)).first()
+    if not channel:
+        raise HTTPException(404, "Channel not found")
+    return {"status": "upload_queued", "video_id": str(video.id)}

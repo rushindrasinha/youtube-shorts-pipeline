@@ -118,3 +118,40 @@ def admin_update_user(
         "role": target.role,
         "is_active": target.is_active,
     }
+
+
+@router.get("/admin/jobs")
+def admin_list_jobs(
+    status: str = None,
+    limit: int = Query(default=50, le=200),
+    offset: int = Query(default=0, ge=0),
+    admin: User = Depends(_require_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Job)
+    if status:
+        query = query.filter(Job.status == status)
+    jobs = query.order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
+    return [{"id": str(j.id), "topic": j.topic, "status": j.status, "user_id": str(j.user_id), "created_at": j.created_at.isoformat() if j.created_at else None} for j in jobs]
+
+
+@router.get("/admin/system")
+def admin_system_health(
+    admin: User = Depends(_require_admin),
+    db: Session = Depends(get_db),
+):
+    from ...settings import settings
+    checks = {}
+    try:
+        db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL)
+        r.ping()
+        checks["redis"] = "ok"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+    return {"checks": checks}

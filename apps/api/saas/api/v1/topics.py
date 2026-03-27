@@ -106,3 +106,10 @@ def quick_create(
         pass  # Job stays queued, will be picked up later
 
     return JobResponse.model_validate(job)
+
+
+@router.post("/topics/refresh")
+def refresh_topics(user=Depends(get_current_user)):
+    from saas.tasks.topic_task import refresh_trending_topics
+    refresh_trending_topics.delay()
+    return {"status": "refreshing"}

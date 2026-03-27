@@ -29,6 +29,45 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: uvicorn saas.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../pipeline:/app/pipeline
+      - ../apps/api/saas:/app/saas
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes:
+      - ../pipeline:/app/pipeline
+      - ../apps/api/saas:/app/saas
+      - ../music:/app/music
+
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    env_file: ../.env
+    depends_on:
+      redis: { condition: service_healthy }
+    command: celery -A saas.workers.celery_app beat --loglevel=info
+    volumes:
+      - ../apps/api/saas:/app/saas
+
 volumes:
   pgdata:
   redisdata:

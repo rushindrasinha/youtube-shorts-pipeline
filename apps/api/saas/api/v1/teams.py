@@ -425,3 +425,32 @@ def team_usage(
             for c in channel_stats
         ],
     )
+
+
+@router.get("/teams/{team_id}/channels")
+def list_team_channels(team_id: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from uuid import UUID as _UUID
+    member = db.query(TeamMember).filter(TeamMember.team_id == _UUID(team_id), TeamMember.user_id == user.id).first()
+    if not member:
+        raise HTTPException(403, "Not a team member")
+    from ...models.channel import YouTubeChannel
+    channels = db.query(YouTubeChannel).filter(YouTubeChannel.team_id == _UUID(team_id), YouTubeChannel.is_active == True).all()
+    return [{"id": str(c.id), "channel_title": c.channel_title, "channel_id": c.channel_id} for c in channels]
+
+
+@router.post("/teams/invites/{token}/accept")
+def accept_invite(token: str, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    from datetime import datetime, timezone
+    invite = db.query(TeamInvite).filter(TeamInvite.token == token, TeamInvite.accepted_at.is_(None)).first()
+    if not invite:
+        raise HTTPException(400, "Invalid or expired invite")
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(400, "Invite expired")
+    existing = db.query(TeamMember).filter(TeamMember.team_id == invite.team_id, TeamMember.user_id == user.id).first()
+    if existing:
+        raise HTTPException(409, "Already a team member")
+    member = TeamMember(team_id=invite.team_id, user_id=user.id, role=invite.role, invited_by=invite.invited_by)
+    db.add(member)
+    invite.accepted_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"team_id": str(invite.team_id), "role": invite.role}
