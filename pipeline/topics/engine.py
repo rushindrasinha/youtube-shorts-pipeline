@@ -2,7 +2,7 @@
 
 import concurrent.futures
 
-from ..config import load_config, get_anthropic_client, get_openrouter_client, get_claude_backend, call_claude_cli
+from ..config import load_config, get_anthropic_client, get_claude_backend, call_claude_cli, call_gemini_text
 from ..log import log
 from .base import TopicCandidate
 
@@ -97,14 +97,8 @@ Consider: visual potential, broad appeal, timeliness, controversy/surprise facto
 Reply with ONLY the topic title text, nothing else."""
 
         backend = get_claude_backend()
-        if backend == "openrouter":
-            client, model = get_openrouter_client()
-            resp = client.chat.completions.create(
-                model=model,
-                max_tokens=200,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return resp.choices[0].message.content.strip()
+        if backend == "gemini":
+            return call_gemini_text(prompt, max_tokens=200)
         elif backend == "api":
             client = get_anthropic_client()
             msg = client.messages.create(

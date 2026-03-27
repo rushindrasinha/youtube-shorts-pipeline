@@ -89,8 +89,6 @@ def get_anthropic_key() -> str:
     return _get_key("ANTHROPIC_API_KEY")
 
 
-def get_openrouter_key() -> str:
-    return _get_key("OPENROUTER_API_KEY")
 
 
 # ─────────────────────────────────────────────────────
@@ -160,44 +158,64 @@ def get_anthropic_client():
     return None
 
 
-def get_openrouter_client():
-    """Create an OpenAI-compatible client pointed at OpenRouter.
+def call_gemini_text(prompt: str, max_tokens: int = 1500) -> str:
+    """Generate text via Gemini 2.5 Pro (REST API, same pattern as image gen).
 
-    OpenRouter proxies Claude models via the OpenAI-compatible API.
-    Set OPENROUTER_API_KEY in config.json or env to use this backend.
-    Model: anthropic/claude-sonnet-4-6 (or override via OPENROUTER_MODEL).
+    Uses GEMINI_API_KEY. Model: gemini-2.5-pro (most capable, reliable).
     """
-    from openai import OpenAI
+    import requests as _requests
 
-    api_key = get_openrouter_key()
+    api_key = get_gemini_key()
     if not api_key:
-        return None, None
-    model = _get_key("OPENROUTER_MODEL") or "anthropic/claude-sonnet-4-6"
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://openrouter.ai/api/v1",
+        raise RuntimeError("GEMINI_API_KEY not set in config or environment.")
+
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta"
+        "/models/gemini-2.5-pro:generateContent"
     )
-    return client, model
+    body = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"maxOutputTokens": max_tokens},
+    }
+    r = _requests.post(
+        url, json=body, timeout=120,
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+    )
+    if r.status_code != 200:
+        try:
+            detail = r.json().get("error", {}).get("message", r.text[:300])
+        except Exception:
+            detail = r.text[:300]
+        raise RuntimeError(f"Gemini API {r.status_code}: {detail}")
+    candidates = r.json().get("candidates", [])
+    if not candidates:
+        raise RuntimeError("Gemini returned no candidates.")
+    return candidates[0]["content"]["parts"][0]["text"].strip()
 
 
-def get_claude_backend() -> str:
-    """Determine which Claude backend to use.
+def get_llm_backend() -> str:
+    """Determine which LLM backend to use.
 
-    Priority: openrouter > direct anthropic API > claude CLI.
+    Priority: gemini > anthropic API > claude CLI.
     Raises RuntimeError if none are available.
     """
-    if get_openrouter_key():
-        return "openrouter"
+    if get_gemini_key():
+        return "gemini"
     if get_anthropic_key():
         return "api"
     if has_claude_cli() and _has_claude_max_credentials():
         return "cli"
     raise RuntimeError(
-        "No Claude access found. Either:\n"
-        "  1. Set OPENROUTER_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
+        "No LLM access found. Either:\n"
+        "  1. Set GEMINI_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
         "  2. Set ANTHROPIC_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
         "  3. Log in to Claude Code (claude login) with a Claude Max subscription"
     )
+
+
+# Keep old name as alias for backward compatibility
+def get_claude_backend() -> str:
+    return get_llm_backend()
 
 
 def get_elevenlabs_key() -> str:
