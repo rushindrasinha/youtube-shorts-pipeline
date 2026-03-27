@@ -89,6 +89,10 @@ def get_anthropic_key() -> str:
     return _get_key("ANTHROPIC_API_KEY")
 
 
+def get_openrouter_key() -> str:
+    return _get_key("OPENROUTER_API_KEY")
+
+
 # ─────────────────────────────────────────────────────
 # Claude Max OAuth support
 # ─────────────────────────────────────────────────────
@@ -156,20 +160,43 @@ def get_anthropic_client():
     return None
 
 
+def get_openrouter_client():
+    """Create an OpenAI-compatible client pointed at OpenRouter.
+
+    OpenRouter proxies Claude models via the OpenAI-compatible API.
+    Set OPENROUTER_API_KEY in config.json or env to use this backend.
+    Model: anthropic/claude-sonnet-4-6 (or override via OPENROUTER_MODEL).
+    """
+    from openai import OpenAI
+
+    api_key = get_openrouter_key()
+    if not api_key:
+        return None, None
+    model = _get_key("OPENROUTER_MODEL") or "anthropic/claude-sonnet-4-6"
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://openrouter.ai/api/v1",
+    )
+    return client, model
+
+
 def get_claude_backend() -> str:
     """Determine which Claude backend to use.
 
-    Returns: "api" if ANTHROPIC_API_KEY is set, "cli" if claude CLI is available.
-    Raises RuntimeError if neither is available.
+    Priority: openrouter > direct anthropic API > claude CLI.
+    Raises RuntimeError if none are available.
     """
+    if get_openrouter_key():
+        return "openrouter"
     if get_anthropic_key():
         return "api"
     if has_claude_cli() and _has_claude_max_credentials():
         return "cli"
     raise RuntimeError(
         "No Claude access found. Either:\n"
-        "  1. Set ANTHROPIC_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
-        "  2. Log in to Claude Code (claude login) with a Claude Max subscription"
+        "  1. Set OPENROUTER_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
+        "  2. Set ANTHROPIC_API_KEY in env or ~/.youtube-shorts-pipeline/config.json\n"
+        "  3. Log in to Claude Code (claude login) with a Claude Max subscription"
     )
 
 

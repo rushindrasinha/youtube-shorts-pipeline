@@ -2,7 +2,7 @@
 
 import json
 
-from .config import get_anthropic_client, get_claude_backend, call_claude_cli
+from .config import get_anthropic_client, get_openrouter_client, get_claude_backend, call_claude_cli
 from .log import log
 from .research import research_topic
 from .retry import with_retry
@@ -17,7 +17,16 @@ def _call_claude(prompt: str) -> str:
     """
     backend = get_claude_backend()
 
-    if backend == "api":
+    if backend == "openrouter":
+        client, model = get_openrouter_client()
+        log(f"Using OpenRouter ({model}) for script generation...")
+        resp = client.chat.completions.create(
+            model=model,
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return resp.choices[0].message.content.strip()
+    elif backend == "api":
         client = get_anthropic_client()
         msg = client.messages.create(
             model="claude-sonnet-4-6",

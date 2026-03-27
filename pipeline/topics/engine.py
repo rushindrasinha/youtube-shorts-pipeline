@@ -2,7 +2,7 @@
 
 import concurrent.futures
 
-from ..config import load_config, get_anthropic_client, get_claude_backend, call_claude_cli
+from ..config import load_config, get_anthropic_client, get_openrouter_client, get_claude_backend, call_claude_cli
 from ..log import log
 from .base import TopicCandidate
 
@@ -97,7 +97,15 @@ Consider: visual potential, broad appeal, timeliness, controversy/surprise facto
 Reply with ONLY the topic title text, nothing else."""
 
         backend = get_claude_backend()
-        if backend == "api":
+        if backend == "openrouter":
+            client, model = get_openrouter_client()
+            resp = client.chat.completions.create(
+                model=model,
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return resp.choices[0].message.content.strip()
+        elif backend == "api":
             client = get_anthropic_client()
             msg = client.messages.create(
                 model="claude-sonnet-4-6",
