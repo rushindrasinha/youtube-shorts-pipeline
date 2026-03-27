@@ -294,7 +294,10 @@ class TestHealth:
     """GET /api/v1/health"""
 
     def test_health(self, client):
-        """GET /health returns ok."""
+        """GET /health returns status with checks."""
         response = client.get("/api/v1/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert data["status"] in ("healthy", "degraded")
+        assert "checks" in data
+        assert "database" in data["checks"]
