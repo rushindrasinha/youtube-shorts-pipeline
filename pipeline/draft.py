@@ -2,7 +2,7 @@
 
 import json
 
-from .config import get_anthropic_client, get_claude_backend, call_claude_cli
+from .config import get_anthropic_client, get_claude_backend, call_claude_cli, call_gemini_text
 from .log import log
 from .research import research_topic
 from .retry import with_retry
@@ -17,7 +17,10 @@ def _call_claude(prompt: str) -> str:
     """
     backend = get_claude_backend()
 
-    if backend == "api":
+    if backend == "gemini":
+        log("Using Gemini 2.5 Pro for script generation...")
+        return call_gemini_text(prompt, max_tokens=1500)
+    elif backend == "api":
         client = get_anthropic_client()
         msg = client.messages.create(
             model="claude-sonnet-4-6",
