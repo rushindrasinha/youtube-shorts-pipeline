@@ -1,6 +1,7 @@
 """Claude script generation."""
 
 import json
+import re
 
 from .config import get_anthropic_client, get_claude_backend, call_claude_cli
 from .log import log
@@ -65,13 +66,22 @@ Output JSON exactly:
 
     raw = _call_claude(prompt)
 
+    # Strip markdown code fences if present
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
         raw = raw.strip()
 
-    draft = json.loads(raw)
+    # Parse JSON with fallback: try raw first, then extract first {...} block
+    try:
+        draft = json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if match:
+            draft = json.loads(match.group())
+        else:
+            raise ValueError(f"Could not extract JSON from Claude response: {raw[:200]}")
 
     # Validate and sanitize LLM output fields
     expected_str_fields = [

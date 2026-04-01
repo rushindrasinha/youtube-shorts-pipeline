@@ -1,47 +1,79 @@
-"""Tests for pipeline/research.py — keyword extraction + research."""
+"""Tests for pipeline/research.py — DuckDuckGo research gate."""
 
-from pipeline.config import extract_keywords
+from unittest.mock import patch, MagicMock
+
+from pipeline.research import research_topic
 
 
-class TestExtractKeywords:
-    def test_basic(self):
-        result = extract_keywords("India wins VCT Pacific 2026")
-        words = result.split()
-        assert len(words) <= 4
-        # Stopwords removed
-        assert "the" not in words
+SAMPLE_DDG_HTML = """
+<html><body>
+<div class="results">
+  <a class="result__snippet" href="https://example.com/1">
+    India beat South Korea 3-1 to win VCT Pacific 2026 grand finals on March 15.
+  </a>
+  <a class="result__snippet" href="https://example.com/2">
+    The tournament featured 12 teams from the Asia-Pacific region competing over two weeks.
+  </a>
+  <a class="result__snippet" href="https://example.com/3">
+    MVP award went to player &quot;AceX&quot; who dominated the semifinals and finals.
+  </a>
+</div>
+</body></html>
+"""
 
-    def test_removes_stopwords(self):
-        result = extract_keywords("The new update is available for all users")
-        words = result.split()
-        assert "the" not in words
-        assert "is" not in words
-        assert "for" not in words
-        assert "new" not in words
+EMPTY_DDG_HTML = "<html><body><div class='results'></div></body></html>"
 
-    def test_removes_short_words(self):
-        result = extract_keywords("An AI is on a new PC")
-        words = result.split()
-        for w in words:
-            assert len(w) > 2
 
-    def test_strips_punctuation(self):
-        result = extract_keywords('Hello, "world!" says (test)')
-        words = result.split()
-        for w in words:
-            assert "," not in w
-            assert '"' not in w
-            assert "!" not in w
+class TestResearchTopic:
+    @patch("pipeline.research._fetch_ddg")
+    def test_returns_snippets(self, mock_fetch):
+        mock_fetch.return_value = SAMPLE_DDG_HTML
+        result = research_topic("India VCT Pacific 2026")
+        assert "India beat South Korea" in result
+        assert "12 teams" in result
+        assert "AceX" in result
 
-    def test_max_four_words(self):
-        result = extract_keywords("one two three four five six seven eight nine ten")
-        words = result.split()
-        assert len(words) <= 4
+    @patch("pipeline.research._fetch_ddg")
+    def test_limits_to_eight_snippets(self, mock_fetch):
+        # Generate HTML with 12 snippets
+        snippets = "".join(
+            f'<a class="result__snippet">Snippet {i}</a>' for i in range(12)
+        )
+        mock_fetch.return_value = f"<html><body>{snippets}</body></html>"
+        result = research_topic("test topic")
+        lines = [l for l in result.split("\n") if l.strip()]
+        assert len(lines) <= 8
 
-    def test_empty_input(self):
-        result = extract_keywords("")
-        assert result == ""
+    @patch("pipeline.research._fetch_ddg")
+    def test_truncates_long_snippets(self, mock_fetch):
+        long_text = "A" * 500
+        mock_fetch.return_value = (
+            f'<html><body><a class="result__snippet">{long_text}</a></body></html>'
+        )
+        result = research_topic("test")
+        # Each snippet truncated to 300 chars
+        assert len(result) <= 300
 
-    def test_all_stopwords(self):
-        result = extract_keywords("the and or but in on at")
-        assert result == ""
+    @patch("pipeline.research._fetch_ddg")
+    def test_empty_results_returns_fallback(self, mock_fetch):
+        mock_fetch.return_value = EMPTY_DDG_HTML
+        result = research_topic("obscure topic xyz")
+        assert "No live research available" in result
+
+    @patch("pipeline.research._fetch_ddg")
+    def test_network_failure_returns_fallback(self, mock_fetch):
+        mock_fetch.side_effect = RuntimeError("Connection failed")
+        result = research_topic("anything")
+        assert "No live research available" in result
+        assert "anything" in result
+
+    @patch("pipeline.research._fetch_ddg")
+    def test_handles_html_entities(self, mock_fetch):
+        mock_fetch.return_value = (
+            '<html><body>'
+            '<a class="result__snippet">Results for &amp; queries &lt;work&gt;</a>'
+            '</body></html>'
+        )
+        result = research_topic("test")
+        # HTMLParser should decode entities
+        assert "& queries" in result or "&amp;" in result

@@ -25,6 +25,8 @@ class RSSSource(TopicSource):
         per_feed = max(1, limit // len(self.feeds))
 
         for feed_url in self.feeds:
+            if not feed_url.startswith(("https://", "http://")):
+                continue
             try:
                 feed = feedparser.parse(feed_url)
                 for entry in feed.entries[:per_feed]:

@@ -6,10 +6,12 @@ import time
 from .log import get_logger
 
 
-def with_retry(max_retries: int = 3, base_delay: float = 2.0):
+def with_retry(max_retries: int = 3, base_delay: float = 2.0, retryable: tuple | None = None):
     """Decorator: retry with exponential backoff on exception.
 
     Delays: base_delay * 2^attempt (2s -> 4s -> 8s by default).
+    If `retryable` is set, only those exception types are retried; others
+    propagate immediately.
     """
     def decorator(func):
         @functools.wraps(func)
@@ -20,6 +22,8 @@ def with_retry(max_retries: int = 3, base_delay: float = 2.0):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    if retryable and not isinstance(e, retryable):
+                        raise
                     last_exc = e
                     if attempt < max_retries:
                         delay = base_delay * (2 ** attempt)

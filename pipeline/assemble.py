@@ -29,6 +29,8 @@ def assemble_video(
 ) -> Path:
     """Assemble final video from frames, voiceover, captions, and music."""
     log("Assembling video...")
+    if not frames:
+        raise ValueError("No b-roll frames provided — cannot assemble video")
     duration = get_audio_duration(voiceover)
     per_frame = duration / len(frames)
     effects = ["zoom_in", "pan_right", "zoom_out"]
@@ -43,7 +45,8 @@ def assemble_video(
     # Concat animated segments (escape single quotes for ffmpeg concat demuxer)
     concat_file = out_dir / "concat.txt"
     def _esc(p):
-        return str(p).replace("'", "'\\''" )
+        s = str(p).replace("'", "'\\''" )
+        return s.replace("\n", "").replace("\r", "")
     concat_file.write_text("\n".join(f"file '{_esc(p)}'" for p in animated))
 
     merged_video = out_dir / "merged_video.mp4"
