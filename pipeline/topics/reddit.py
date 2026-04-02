@@ -1,8 +1,13 @@
 """Reddit .json API topic source (hot/trending)."""
 
+import math
+import re
+
 import requests
 
 from .base import TopicCandidate, TopicSource
+
+_SUBREDDIT_RE = re.compile(r"^[a-zA-Z0-9_]+$")
 
 
 class RedditSource(TopicSource):
@@ -25,6 +30,8 @@ class RedditSource(TopicSource):
         return topics[:limit]
 
     def _fetch_subreddit(self, subreddit: str, limit: int) -> list[TopicCandidate]:
+        if not _SUBREDDIT_RE.match(subreddit):
+            return []
         url = f"https://www.reddit.com/r/{subreddit}/hot.json"
         headers = {"User-Agent": "yt-shorts-pipeline/2.0"}
         r = requests.get(url, headers=headers, params={"limit": limit + 2}, timeout=10)
@@ -39,7 +46,6 @@ class RedditSource(TopicSource):
 
             score = d.get("score", 0)
             # Normalize score: 10K+ = 1.0, logarithmic scale
-            import math
             normalized = min(1.0, math.log10(max(score, 1)) / 4)
 
             topics.append(TopicCandidate(

@@ -11,17 +11,23 @@ dependencies = [
     "google-api-python-client>=2.100.0,<3.0",
     "google-auth>=2.23.0,<3.0",
     "google-auth-oauthlib>=1.1.0,<2.0",
-    "openai-whisper>=20231117",
+    "openai-whisper>=20231117,<20270101",
     "feedparser>=6.0.0,<7.0",
 ]
 
 [project.optional-dependencies]
-trends = ["pytrends"]
-dev = ["pytest", "pytest-mock"]
+trends = ["pytrends>=4.9.0,<5.0"]
+dev = ["pytest", "pytest-mock", "pytest-cov"]
 
 [project.scripts]
 yt-shorts = "pipeline.__main__:main"
 
+[tool.setuptools.packages.find]
+include = ["pipeline*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [build-system]
 requires = ["setuptools>=68.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"

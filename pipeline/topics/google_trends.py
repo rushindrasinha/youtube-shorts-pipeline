@@ -25,10 +25,10 @@ class GoogleTrendsSource(TopicSource):
         trending = pytrends.trending_searches(pn=self._geo_to_pn())
 
         topics = []
-        for i, row in trending.head(limit).iterrows():
+        for rank, (_, row) in enumerate(trending.head(limit).iterrows()):
             title = str(row[0])
             # Score decreases with rank
-            score = max(0.1, 1.0 - (i * 0.05))
+            score = max(0.1, 1.0 - (rank * 0.05))
             topics.append(TopicCandidate(
                 title=title,
                 source="google_trends",

@@ -11,9 +11,9 @@ from .retry import with_retry
 def upload_to_youtube(
     video_path: Path,
     draft: dict,
-    srt_path: Path = None,
+    srt_path: Path | None = None,
     lang: str = "en",
-    thumbnail_path: Path = None,
+    thumbnail_path: Path | None = None,
 ) -> str:
     """Upload video to YouTube with metadata, captions, and optional thumbnail."""
     from google.oauth2.credentials import Credentials
@@ -40,7 +40,7 @@ def upload_to_youtube(
         "snippet": {
             "title": draft.get("youtube_title", draft["news"])[:100],
             "description": draft.get("youtube_description", ""),
-            "tags": draft.get("youtube_tags", "").split(","),
+            "tags": [t for t in draft.get("youtube_tags", "").split(",") if t.strip()],
             "categoryId": "20",
             "defaultLanguage": lang,
             "defaultAudioLanguage": lang,
