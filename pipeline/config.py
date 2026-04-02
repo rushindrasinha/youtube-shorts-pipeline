@@ -57,7 +57,7 @@ def run_cmd(cmd, check=True, capture=False):
     if capture:
         r = subprocess.run(cmd, capture_output=True, text=True)
         if check and r.returncode != 0:
-            raise RuntimeError(r.stderr)
+            raise RuntimeError(r.stderr[:500])
         return r
     subprocess.run(cmd, check=check)
 

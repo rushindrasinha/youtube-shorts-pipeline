@@ -108,11 +108,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             # Build text with override tags: yellow for active, white for rest
             parts = []
             for j, w in enumerate(group):
+                # Strip ASS override-tag delimiters to prevent injection
+                safe_word = w['word'].replace('{', '').replace('}', '')
                 if j == active_idx:
                     # Yellow, bold, slightly larger
-                    parts.append(f"{{\\c&H00FFFF&\\b1\\fs80}}{w['word']}{{\\r}}")
+                    parts.append(f"{{\\c&H00FFFF&\\b1\\fs80}}{safe_word}{{\\r}}")
                 else:
-                    parts.append(w["word"])
+                    parts.append(safe_word)
 
             text = " ".join(parts)
             events.append(
@@ -134,7 +136,7 @@ def _generate_srt(words: list[dict], output_path: Path) -> Path:
             continue
         start = group[0]["start"]
         end = group[-1]["end"]
-        text = " ".join(w["word"] for w in group)
+        text = " ".join(w["word"].replace('{', '').replace('}', '') for w in group)
 
         start_ts = _srt_time(start)
         end_ts = _srt_time(end)
