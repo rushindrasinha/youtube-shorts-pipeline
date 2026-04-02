@@ -1,10 +1,17 @@
 """ffmpeg video assembly — frames + voiceover + music + captions."""
 
+import re
 from pathlib import Path
 
 from .broll import animate_frame
 from .config import MEDIA_DIR, run_cmd
 from .log import log
+
+# Allowlist for duck_filter values — matches output of music.build_duck_filter()
+# e.g. "volume=0.25" or "volume='if(between(t,0.30,1.50)+between(t,2.00,3.50), 0.12, 0.25)':eval=frame"
+_DUCK_FILTER_RE = re.compile(
+    r"^volume=['\"]?[a-zA-Z0-9_()+.,/:' ]*['\"]?(?::eval=frame)?$"
+)
 
 
 def get_audio_duration(path: Path) -> float:
@@ -29,6 +36,8 @@ def assemble_video(
 ) -> Path:
     """Assemble final video from frames, voiceover, captions, and music."""
     log("Assembling video...")
+    if not frames:
+        raise ValueError("No b-roll frames provided — cannot assemble video")
     duration = get_audio_duration(voiceover)
     per_frame = duration / len(frames)
     effects = ["zoom_in", "pan_right", "zoom_out"]
@@ -43,7 +52,8 @@ def assemble_video(
     # Concat animated segments (escape single quotes for ffmpeg concat demuxer)
     concat_file = out_dir / "concat.txt"
     def _esc(p):
-        return str(p).replace("'", "'\\''" )
+        s = str(p).replace("'", "'\\''" )
+        return s.replace("\n", "").replace("\r", "")
     concat_file.write_text("\n".join(f"file '{_esc(p)}'" for p in animated))
 
     merged_video = out_dir / "merged_video.mp4"
@@ -60,7 +70,15 @@ def assemble_video(
     vf_parts = []
     if ass_path and Path(ass_path).exists():
         # Escape special chars in path for ffmpeg filter
-        escaped_ass = str(ass_path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+        # Escape all ffmpeg filter-graph special characters in the ASS path
+        escaped_ass = (str(ass_path)
+                       .replace("\\", "\\\\")
+                       .replace(":", "\\:")
+                       .replace("'", "\\'")
+                       .replace(";", "\\;")
+                       .replace("[", "\\[")
+                       .replace("]", "\\]")
+                       .replace(",", "\\,"))
         vf_parts.append(f"ass={escaped_ass}")
     vf = ",".join(vf_parts) if vf_parts else None
 
@@ -71,6 +89,10 @@ def assemble_video(
         # Loop music to match video duration, apply ducking
         music_filter = f"[2:a]aloop=loop=-1:size=2e+09,atrim=0:{duration}"
         if duck_filter:
+            # Validate duck_filter against allowlist (state file tamper defence)
+            if not _DUCK_FILTER_RE.match(duck_filter):
+                log(f"Invalid duck_filter rejected: {duck_filter[:80]!r}")
+                duck_filter = "volume=0.25"
             music_filter += f",{duck_filter}"
         music_filter += "[music]"
 

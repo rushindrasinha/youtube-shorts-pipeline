@@ -16,29 +16,39 @@ def _find_tracks() -> list[Path]:
     return sorted(MUSIC_DIR.glob("*.mp3"))
 
 
-def _get_speech_regions(audio_path: Path) -> list[tuple[float, float]]:
-    """Extract speech regions from Whisper word timestamps (reuses captions data).
+def _words_to_speech_regions(words: list[dict]) -> list[tuple[float, float]]:
+    """Merge word timestamps into speech regions (gap < 0.5s = same region)."""
+    if not words:
+        return []
+    regions = []
+    region_start = words[0]["start"]
+    region_end = words[0]["end"]
 
-    Falls back to treating the entire audio as one speech region.
+    for w in words[1:]:
+        if w["start"] - region_end < 0.5:
+            region_end = w["end"]
+        else:
+            regions.append((region_start, region_end))
+            region_start = w["start"]
+            region_end = w["end"]
+    regions.append((region_start, region_end))
+    return regions
+
+
+def _get_speech_regions(audio_path: Path, words: list[dict] | None = None) -> list[tuple[float, float]]:
+    """Extract speech regions from word timestamps.
+
+    If `words` are provided (from captions stage), uses them directly to avoid
+    running Whisper twice. Otherwise falls back to Whisper or whole-audio region.
     """
+    if words:
+        return _words_to_speech_regions(words)
+
     try:
         from .captions import _whisper_word_timestamps
-        words = _whisper_word_timestamps(audio_path)
-        if words:
-            # Merge close words into speech regions (gap < 0.5s = same region)
-            regions = []
-            region_start = words[0]["start"]
-            region_end = words[0]["end"]
-
-            for w in words[1:]:
-                if w["start"] - region_end < 0.5:
-                    region_end = w["end"]
-                else:
-                    regions.append((region_start, region_end))
-                    region_start = w["start"]
-                    region_end = w["end"]
-            regions.append((region_start, region_end))
-            return regions
+        w = _whisper_word_timestamps(audio_path)
+        if w:
+            return _words_to_speech_regions(w)
     except Exception:
         pass
 
@@ -73,8 +83,15 @@ def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float =
     return f"volume='if({condition_expr}, 0.12, 0.25)':eval=frame"
 
 
-def select_and_prepare_music(voiceover_path: Path, work_dir: Path) -> dict:
+def select_and_prepare_music(
+    voiceover_path: Path,
+    work_dir: Path,
+    words: list[dict] | None = None,
+) -> dict:
     """Select a random track, build duck filter from speech regions.
+
+    If `words` are provided (from the captions stage), they are reused for speech
+    region detection, avoiding a redundant Whisper transcription.
 
     Returns dict with track_path and duck_filter for use by assemble.py.
     """
@@ -86,8 +103,8 @@ def select_and_prepare_music(voiceover_path: Path, work_dir: Path) -> dict:
     track = random.choice(tracks)
     log(f"Selected music track: {track.name}")
 
-    # Get speech regions for ducking
-    speech_regions = _get_speech_regions(voiceover_path)
+    # Get speech regions for ducking (reuse words from captions if available)
+    speech_regions = _get_speech_regions(voiceover_path, words=words)
     duck_filter = build_duck_filter(speech_regions)
     log(f"Built duck filter with {len(speech_regions)} speech regions")
 

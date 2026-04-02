@@ -1,5 +1,6 @@
 """Key resolution, paths, constants, and setup wizard."""
 
+import getpass
 import json
 import os
 import stat
@@ -52,13 +53,13 @@ def write_secret_file(path: Path, content: str):
         f.write(content)
 
 
-def run_cmd(cmd, check=True, capture=False, **kwargs):
+def run_cmd(cmd, check=True, capture=False):
     if capture:
-        r = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+        r = subprocess.run(cmd, capture_output=True, text=True)
         if check and r.returncode != 0:
-            raise RuntimeError(r.stderr)
+            raise RuntimeError(r.stderr[:500])
         return r
-    subprocess.run(cmd, check=check, **kwargs)
+    subprocess.run(cmd, check=check)
 
 
 def extract_keywords(text: str) -> str:
@@ -224,19 +225,19 @@ def run_setup():
 
     print("1. Anthropic API key (required — used for Claude script generation)")
     print("   Get yours at: https://console.anthropic.com/settings/keys")
-    key = input("   ANTHROPIC_API_KEY: ").strip()
+    key = getpass.getpass("   ANTHROPIC_API_KEY: ").strip()
     if key:
         config["ANTHROPIC_API_KEY"] = key
 
     print("\n2. ElevenLabs API key (optional — fallback to macOS 'say' if omitted)")
     print("   Pro account required for server use. https://elevenlabs.io/settings/api-keys")
-    key = input("   ELEVENLABS_API_KEY (press Enter to skip): ").strip()
+    key = getpass.getpass("   ELEVENLABS_API_KEY (press Enter to skip): ").strip()
     if key:
         config["ELEVENLABS_API_KEY"] = key
 
     print("\n3. Google Gemini API key (required — used for AI b-roll image generation)")
     print("   Get yours at: https://aistudio.google.com/apikey")
-    key = input("   GEMINI_API_KEY: ").strip()
+    key = getpass.getpass("   GEMINI_API_KEY: ").strip()
     if key:
         config["GEMINI_API_KEY"] = key
 

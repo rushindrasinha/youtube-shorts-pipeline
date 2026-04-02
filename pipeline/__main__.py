@@ -66,27 +66,42 @@ def cmd_produce(args):
 
     # B-roll
     if force or not state.is_done("broll"):
-        frames = generate_broll(draft.get("broll_prompts", ["Cinematic landscape"] * 3), work_dir)
-        state.complete_stage("broll", {"frames": [str(f) for f in frames]})
+        try:
+            frames = generate_broll(draft.get("broll_prompts", ["Cinematic landscape"] * 3), work_dir)
+            state.complete_stage("broll", {"frames": [str(f) for f in frames]})
+        except Exception as e:
+            state.fail_stage("broll", str(e))
+            state.save(draft_path)
+            raise
     else:
         log("Skipping b-roll (already done)")
         frames = [Path(f) for f in state.get_artifact("broll", "frames", [])]
 
     # Voiceover
     if force or not state.is_done("voiceover"):
-        vo_path = generate_voiceover(script, work_dir, lang)
-        state.complete_stage("voiceover", {"path": str(vo_path)})
+        try:
+            vo_path = generate_voiceover(script, work_dir, lang)
+            state.complete_stage("voiceover", {"path": str(vo_path)})
+        except Exception as e:
+            state.fail_stage("voiceover", str(e))
+            state.save(draft_path)
+            raise
     else:
         log("Skipping voiceover (already done)")
         vo_path = Path(state.get_artifact("voiceover", "path"))
 
     # Whisper + Captions
     if force or not state.is_done("captions"):
-        captions_result = generate_captions(vo_path, work_dir, lang)
-        state.complete_stage("captions", {
-            "srt_path": str(captions_result.get("srt_path", "")),
-            "ass_path": str(captions_result.get("ass_path", "")),
-        })
+        try:
+            captions_result = generate_captions(vo_path, work_dir, lang)
+            state.complete_stage("captions", {
+                "srt_path": str(captions_result.get("srt_path", "")),
+                "ass_path": str(captions_result.get("ass_path", "")),
+            })
+        except Exception as e:
+            state.fail_stage("captions", str(e))
+            state.save(draft_path)
+            raise
     else:
         log("Skipping captions (already done)")
         captions_result = {
@@ -96,11 +111,19 @@ def cmd_produce(args):
 
     # Music
     if force or not state.is_done("music"):
-        music_result = select_and_prepare_music(vo_path, work_dir)
-        state.complete_stage("music", {
-            "track_path": str(music_result.get("track_path", "")),
-            "duck_filter": music_result.get("duck_filter", ""),
-        })
+        try:
+            music_result = select_and_prepare_music(
+                vo_path, work_dir,
+                words=captions_result.get("words"),
+            )
+            state.complete_stage("music", {
+                "track_path": str(music_result.get("track_path", "")),
+                "duck_filter": music_result.get("duck_filter", ""),
+            })
+        except Exception as e:
+            state.fail_stage("music", str(e))
+            state.save(draft_path)
+            raise
     else:
         log("Skipping music (already done)")
         music_result = {
@@ -110,17 +133,22 @@ def cmd_produce(args):
 
     # Assemble
     if force or not state.is_done("assemble"):
-        video_path = assemble_video(
-            frames=frames,
-            voiceover=vo_path,
-            out_dir=work_dir,
-            job_id=job_id,
-            lang=lang,
-            ass_path=captions_result.get("ass_path"),
-            music_path=music_result.get("track_path"),
-            duck_filter=music_result.get("duck_filter"),
-        )
-        state.complete_stage("assemble", {"video_path": str(video_path)})
+        try:
+            video_path = assemble_video(
+                frames=frames,
+                voiceover=vo_path,
+                out_dir=work_dir,
+                job_id=job_id,
+                lang=lang,
+                ass_path=captions_result.get("ass_path"),
+                music_path=music_result.get("track_path"),
+                duck_filter=music_result.get("duck_filter"),
+            )
+            state.complete_stage("assemble", {"video_path": str(video_path)})
+        except Exception as e:
+            state.fail_stage("assemble", str(e))
+            state.save(draft_path)
+            raise
     else:
         log("Skipping assembly (already done)")
         video_path = Path(state.get_artifact("assemble", "video_path"))
@@ -192,21 +220,15 @@ def cmd_run(args):
         print("  Dry run — skipping produce + upload")
         return
 
-    # Monkey-patch args for produce/upload
-    class ProduceArgs:
-        draft = str(draft_path)
-        lang = args.lang
-        script = None
-        force = False
+    produce_args = argparse.Namespace(
+        draft=str(draft_path), lang=args.lang, script=None, force=False,
+    )
+    video_path = cmd_produce(produce_args)
 
-    video_path = cmd_produce(ProduceArgs())
-
-    class UploadArgs:
-        draft = str(draft_path)
-        lang = args.lang
-        force = False
-
-    url = cmd_upload(UploadArgs())
+    upload_args = argparse.Namespace(
+        draft=str(draft_path), lang=args.lang, force=False,
+    )
+    url = cmd_upload(upload_args)
     print(f"\n  Done! {url}")
 
 

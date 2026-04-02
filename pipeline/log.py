@@ -1,6 +1,7 @@
 """Structured file + console logging."""
 
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -29,9 +30,14 @@ def get_logger() -> logging.Logger:
     console.setFormatter(logging.Formatter("  %(message)s"))
     _logger.addHandler(console)
 
-    # File handler — always DEBUG
+    # File handler — always DEBUG (0o600 to protect logged data)
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     log_file = LOGS_DIR / f"pipeline_{datetime.now():%Y%m%d}.log"
+    # Pre-create/fix log file with restricted permissions before FileHandler opens it
+    fd = os.open(str(log_file), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    os.close(fd)
+    # Also correct permissions on pre-existing log files from earlier versions
+    os.chmod(str(log_file), 0o600)
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(

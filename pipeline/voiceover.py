@@ -36,7 +36,7 @@ def _say_fallback(script: str, out_dir: Path) -> Path:
     """macOS 'say' fallback TTS."""
     out_path = out_dir / "voiceover_say.aiff"
     mp3_path = out_dir / "voiceover_say.mp3"
-    run_cmd(["say", "-o", str(out_path), script])
+    run_cmd(["say", "-o", str(out_path), "--", script])
     run_cmd([
         "ffmpeg", "-i", str(out_path), "-acodec", "libmp3lame",
         str(mp3_path), "-y", "-loglevel", "quiet",

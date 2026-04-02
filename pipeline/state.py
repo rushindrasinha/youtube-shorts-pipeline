@@ -1,6 +1,7 @@
 """Draft JSON state machine for pipeline resume capability."""
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -74,5 +75,9 @@ class PipelineState:
         return "\n".join(lines)
 
     def save(self, path: Path):
-        """Write the draft (with embedded state) to disk."""
-        path.write_text(json.dumps(self.draft, indent=2, ensure_ascii=False))
+        """Write the draft (with embedded state) to disk with restricted perms."""
+        content = json.dumps(self.draft, indent=2, ensure_ascii=False)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(content)

@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.2.0] — 2026-04-01
+
+Multi-LLM code review findings: correctness, security hardening, architecture improvements.
+
+### Fixed
+- **Fix `ZeroDivisionError` in video assembly when frames list is empty.** `assemble_video()` now raises a clear `ValueError` instead of crashing on division by zero.
+- **Fix swapped zoom effect formulas.** `zoom_in` was actually zooming out and vice versa in `broll.py` — the ffmpeg zoompan `z` expressions are now correct.
+- **Fix JSON parsing crash in `draft.py`.** `json.loads()` now has a try/except with regex-based `{...}` extraction fallback for malformed LLM responses.
+- **Fix empty YouTube tags.** `upload.py` no longer sends `[""]` when `youtube_tags` is empty — filters out blank entries.
+- **Fix version mismatch.** `__init__.py` now matches `pyproject.toml` at `2.1.0` (was `2.0.0`).
+- **Fix `cmd_run` fragile inline classes.** Replaced ad-hoc `ProduceArgs`/`UploadArgs` with standard `argparse.Namespace`.
+- **Fix Google Trends score calculation.** Uses `enumerate()` instead of relying on DataFrame index for rank-based scoring.
+- **Fix `import math` inside loop body** in `reddit.py` — moved to module level.
+- **Fix type annotations** in `upload.py`: `Path = None` → `Path | None = None`.
+
+### Security
+- **Mask API key input during setup.** `config.py` now uses `getpass.getpass()` instead of `input()` to suppress terminal echo.
+- **Harden `run_cmd` wrapper.** Removed `**kwargs` passthrough to `subprocess.run`, preventing callers from injecting `shell=True`.
+- **Prevent flag injection in macOS `say` fallback.** Added `--` separator before script text in `voiceover.py`.
+- **Validate RSS feed URL schemes.** `rss.py` now rejects non-HTTP(S) URLs, preventing SSRF via `file://` or metadata endpoints.
+- **Validate Reddit subreddit names.** `reddit.py` now checks subreddit names against `^[a-zA-Z0-9_]+$` before URL construction.
+- **Strip newlines from ffmpeg concat paths.** Prevents directive injection in concat demuxer files.
+- **Restrict draft JSON file permissions.** `state.py` now writes files with `0o600` (owner-only) like `config.json`.
+- **Add `retryable` parameter to `@with_retry`.** Allows filtering which exceptions trigger retries vs. immediate propagation (e.g., skip retrying 401s).
+
+### Improved
+- **Wire `fail_stage()` into pipeline orchestration.** `cmd_produce` now records stage failures in the draft JSON before re-raising, enabling operators to distinguish "never attempted" from "attempted and failed" on resume.
+- **Eliminate double Whisper transcription.** `select_and_prepare_music()` now accepts pre-computed word timestamps from the captions stage, avoiding a redundant 5-15s Whisper run.
+- **Rewrite `test_research.py`.** Previously tested `extract_keywords` (wrong module). Now tests the actual `research_topic()` function with mocked DuckDuckGo responses.
+- **Fix build backend.** `pyproject.toml` now uses `setuptools.build_meta` instead of private `setuptools.backends._legacy:_Backend`.
+- **Add `pytest-cov` to dev dependencies** and `[tool.pytest.ini_options]` configuration.
+- **Pin `pytrends` optional dependency** to `>=4.9.0,<5.0`.
+
 ## [2.1.0] — 2026-02-27
 
 Security audit fixes ported to v2 modular architecture.
