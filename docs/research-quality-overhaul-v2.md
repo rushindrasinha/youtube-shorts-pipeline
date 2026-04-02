@@ -85,6 +85,14 @@ Our pipeline produces what the internet calls "the AI slop formula" — a patter
 | Text appearance | Ping | At frame text appears |
 | Before reveal | Riser | 1.5-3s before |
 
+## Post-Implementation Assessment (2026-04-02)
+
+Items 2-10 were implemented and shipped. Produced a Bitcoin test video with the full stack.
+
+**Key finding: Problem #1 is the whole ballgame.** Still images — even with stock footage mixed in, color grading, variable timing, SFX, and emotional voice — don't pass the eye test. The output needs to be actual video with real motion, not animated stills with Ken Burns.
+
+**Revised path forward:** Replace Ken Burns / DepthFlow with image-to-video AI models (Kling, Runway, Minimax, etc.) that generate 5-10 second video clips from our AI frames. The pipeline architecture already supports this — the `animate_frame()` function in `broll.py` is the swap point. Everything else we built (voice, SFX, grading, timing) will land much harder once the visual foundation is actual video.
+
 ## Sources
 - Kapwing AI Slop Study, Faux Lens Journal, NPR, ElevenLabs docs
 - MrBeast editor interviews, OpusClip retention data

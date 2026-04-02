@@ -148,6 +148,7 @@ def cmd_produce(args):
                 words=captions_result.get("words"),
                 script=script,
                 mood=draft.get("music_mood"),
+                broll_prompts=draft.get("broll_prompts"),
             )
             state.complete_stage("assemble", {"video_path": str(video_path)})
         except Exception as e:

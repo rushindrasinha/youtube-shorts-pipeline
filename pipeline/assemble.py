@@ -37,6 +37,7 @@ def assemble_video(
     words: list[dict] | None = None,
     script: str | None = None,
     mood: str | None = None,
+    broll_prompts: list[str] | None = None,
 ) -> Path:
     """Assemble final video from frames, voiceover, captions, and music."""
     log("Assembling video...")
@@ -67,12 +68,15 @@ def assemble_video(
 
     per_frame = sum(per_frame_list) / len(per_frame_list)  # average for backward compat
 
-    # Animate each frame with varied Ken Burns effects and varied durations
+    # Animate each frame — Veo 3.1 Lite video gen with Ken Burns fallback
     animated = []
+    prompts = broll_prompts or []
     for i, frame in enumerate(frames):
         anim = out_dir / f"anim_{i}.mp4"
         frame_dur = per_frame_list[i] if i < len(per_frame_list) else per_frame
-        animate_frame(frame, anim, frame_dur + 0.1, effects[i % len(effects)])
+        frame_prompt = prompts[i] if i < len(prompts) else None
+        animate_frame(frame, anim, frame_dur + 0.1, effects[i % len(effects)],
+                      prompt=frame_prompt)
         animated.append(anim)
 
     # Merge animated segments with varied transitions
@@ -90,9 +94,22 @@ def assemble_video(
         for a in animated:
             inputs += ["-i", str(a)]
 
-        # Compute cumulative offsets from variable frame durations
+        # Compute cumulative offsets from ACTUAL clip durations (not planned)
+        # Veo clips may differ from planned durations due to API constraints
+        actual_durs = []
+        for a in animated:
+            try:
+                r = run_cmd(
+                    ["ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                     "-of", "csv=p=0", str(a)],
+                    capture=True,
+                )
+                actual_durs.append(float(r.stdout.strip()))
+            except Exception:
+                actual_durs.append(per_frame_list[len(actual_durs)] if len(actual_durs) < len(per_frame_list) else per_frame)
+
         cumulative = [0.0]
-        for d in per_frame_list:
+        for d in actual_durs:
             cumulative.append(cumulative[-1] + d)
 
         filter_parts = []

@@ -110,11 +110,12 @@ EFFECTS = [
 ]
 
 
-def animate_frame(img_path: Path, out_path: Path, duration: float, effect: str = "zoom_in"):
-    """Ken Burns animation with micro-jitter for organic camera feel.
+def animate_frame(img_path: Path, out_path: Path, duration: float, effect: str = "zoom_in",
+                   prompt: str | None = None):
+    """Animate a still frame into a video clip.
 
-    8 effect variants with sinusoidal jitter to break mechanical smoothness.
-    For video inputs (.mp4/.mov/.webm), skip Ken Burns and just scale/crop.
+    Priority: Veo 3.1 Lite (real AI video) → Ken Burns (zoompan fallback).
+    For video inputs (.mp4/.mov/.webm), just scale/crop.
     """
     # If input is already a video, just scale/crop to 1080x1920
     if img_path.suffix in (".mp4", ".mov", ".webm"):
@@ -125,6 +126,29 @@ def animate_frame(img_path: Path, out_path: Path, duration: float, effect: str =
             str(out_path), "-y", "-loglevel", "quiet",
         ])
         return
+
+    # Try Veo 3.1 Lite for real AI-generated video motion
+    if img_path.suffix in (".png", ".jpg", ".jpeg"):
+        try:
+            from .video_gen import generate_video_from_image
+            veo_prompt = f"Slow cinematic camera movement, {prompt or 'dramatic scene'}"
+            veo_out = out_path.with_name(out_path.stem + "_veo.mp4")
+            generate_video_from_image(
+                image_path=img_path,
+                prompt=veo_prompt,
+                output_path=veo_out,
+                duration_seconds=max(4, int(duration)),
+            )
+            # Scale/crop Veo output to exact 1080x1920 and trim to duration
+            run_cmd([
+                "ffmpeg", "-i", str(veo_out), "-t", str(duration),
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+                "-r", "30", "-pix_fmt", "yuv420p",
+                str(out_path), "-y", "-loglevel", "quiet",
+            ])
+            return
+        except Exception as e:
+            log(f"Veo video generation failed: {e} — falling back to Ken Burns")
 
     fps = 30
     frames = int(duration * fps)
