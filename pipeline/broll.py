@@ -55,18 +55,29 @@ _STYLE_SUFFIX = ", 9:16 portrait orientation, photorealistic, cinematic lighting
 
 
 def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
-    """Generate up to 5 b-roll frames via Gemini Imagen, with fallback."""
+    """Generate up to 8 b-roll frames via Gemini Imagen, with fallback."""
     api_key = get_gemini_key()
     frames = []
-    max_frames = min(len(prompts), 5)
+    max_frames = min(len(prompts), 8)
 
     for i, prompt in enumerate(prompts[:max_frames]):
         out_path = out_dir / f"broll_{i}.png"
+
+        # Alternate: odd indices try stock video first
+        if i % 2 == 1:
+            from .stock_footage import fetch_stock_clip
+            stock_path = out_dir / f"stock_{i}.mp4"
+            clip = fetch_stock_clip(prompt, stock_path, max_duration=12.0)
+            if clip:
+                frames.append(clip)
+                continue
+
+        # AI image generation (even indices, or stock fallback)
         log(f"Generating b-roll frame {i+1}/{max_frames} via Gemini Imagen...")
-        prompt = prompt + _STYLE_SUFFIX
+        styled_prompt = prompt + _STYLE_SUFFIX
 
         try:
-            _generate_image_gemini(prompt, out_path, api_key)
+            _generate_image_gemini(styled_prompt, out_path, api_key)
 
             # Resize/crop to 9:16 portrait
             img = Image.open(out_path).convert("RGB")
@@ -103,7 +114,18 @@ def animate_frame(img_path: Path, out_path: Path, duration: float, effect: str =
     """Ken Burns animation with micro-jitter for organic camera feel.
 
     8 effect variants with sinusoidal jitter to break mechanical smoothness.
+    For video inputs (.mp4/.mov/.webm), skip Ken Burns and just scale/crop.
     """
+    # If input is already a video, just scale/crop to 1080x1920
+    if img_path.suffix in (".mp4", ".mov", ".webm"):
+        run_cmd([
+            "ffmpeg", "-i", str(img_path), "-t", str(duration),
+            "-vf", f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+            "-r", "30", "-pix_fmt", "yuv420p",
+            str(out_path), "-y", "-loglevel", "quiet",
+        ])
+        return
+
     fps = 30
     frames = int(duration * fps)
     w, h = VIDEO_WIDTH, VIDEO_HEIGHT

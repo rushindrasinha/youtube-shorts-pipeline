@@ -98,24 +98,27 @@ class TestGenerateBroll:
             img = Image.open(f)
             assert img.size == (VIDEO_WIDTH, VIDEO_HEIGHT)
 
-    def test_truncates_to_three(self, tmp_path, mocker):
+    def test_respects_max_frames(self, tmp_path, mocker):
         mocker.patch("pipeline.broll.get_gemini_key", return_value="test-key")
+        mocker.patch("pipeline.stock_footage.get_pexels_key", return_value="")
         mock_gen = mocker.patch(
             "pipeline.broll._generate_image_gemini",
             side_effect=self._mock_gemini_success,
         )
 
-        frames = generate_broll(["a", "b", "c", "d", "e"], tmp_path)
+        # 10 prompts should be capped at 8 (max_frames)
+        frames = generate_broll([f"p{i}" for i in range(10)], tmp_path)
 
-        assert len(frames) == 3
-        assert mock_gen.call_count == 3
+        assert len(frames) == 8
+        assert mock_gen.call_count == 8
 
-    def test_empty_prompts(self, tmp_path, mocker):
+    def test_empty_prompts_gets_fallbacks(self, tmp_path, mocker):
         mocker.patch("pipeline.broll.get_gemini_key", return_value="test-key")
 
         frames = generate_broll([], tmp_path)
 
-        assert frames == []
+        # Empty prompts still get 3 fallback frames (minimum)
+        assert len(frames) == 3
 
 
 class TestResizeCrop:
@@ -135,7 +138,7 @@ class TestResizeCrop:
 
         frames = generate_broll(["landscape test"], tmp_path)
 
-        assert len(frames) == 1
+        assert len(frames) >= 1
         img = Image.open(frames[0])
         assert img.size == (VIDEO_WIDTH, VIDEO_HEIGHT)
 
@@ -148,7 +151,7 @@ class TestResizeCrop:
 
         frames = generate_broll(["square test"], tmp_path)
 
-        assert len(frames) == 1
+        assert len(frames) >= 1
         img = Image.open(frames[0])
         assert img.size == (VIDEO_WIDTH, VIDEO_HEIGHT)
 

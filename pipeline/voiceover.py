@@ -21,10 +21,11 @@ def _call_elevenlabs(script: str, voice_id: str, api_key: str) -> bytes:
             "text": script,
             "model_id": "eleven_v3",
             "voice_settings": {
-                "stability": 0.30,  # low = more expressive, dynamic, human-like
-                "similarity_boost": 0.70,
-                "style": 0.45,  # higher = more dramatic delivery
+                "stability": 0.32,
+                "similarity_boost": 0.72,
+                "style": 0.40,
                 "use_speaker_boost": True,
+                "speed": 1.08,
             },
         },
         timeout=120,  # v3 is slower but higher quality
@@ -90,7 +91,9 @@ def _say_fallback(script: str, out_dir: Path) -> Path:
     """macOS 'say' fallback TTS."""
     # Strip audio tags that say doesn't understand
     clean = script
-    for tag in ["[excited]", "[pause]", "[serious]", "[whispers]", "[dramatic]"]:
+    for tag in ["[excited]", "[pause]", "[serious]", "[whispers]", "[dramatic]",
+                "[dramatic tone]", "[conversational tone]", "[laughs]", "[sighs]",
+                "[hesitates]", "[rushed]", "[long pause]", "[short pause]"]:
         clean = clean.replace(tag, "")
     out_path = out_dir / "voiceover_say.aiff"
     mp3_path = out_dir / "voiceover_say.mp3"

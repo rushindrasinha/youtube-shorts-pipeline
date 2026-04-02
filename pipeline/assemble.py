@@ -34,21 +34,45 @@ def assemble_video(
     music_path: str | None = None,
     duck_filter: str | None = None,
     remotion_overlay: str | None = None,
+    words: list[dict] | None = None,
+    script: str | None = None,
+    mood: str | None = None,
 ) -> Path:
     """Assemble final video from frames, voiceover, captions, and music."""
     log("Assembling video...")
     if not frames:
         raise ValueError("No b-roll frames provided — cannot assemble video")
     duration = get_audio_duration(voiceover)
-    per_frame = duration / len(frames)
     from .broll import EFFECTS
     effects = EFFECTS  # 8 varied motion effects with micro-jitter
 
-    # Animate each frame with varied Ken Burns effects
+    # Vary frame durations — hook is shorter, middle varies, end holds
+    n = len(frames)
+    if n <= 2:
+        per_frame_list = [duration / n] * n
+    else:
+        avg = duration / n
+        weights = []
+        for i in range(n):
+            if i == 0:
+                weights.append(0.6)   # Hook — fast
+            elif i == n - 1:
+                weights.append(1.3)   # End — holds longer
+            elif i < n // 2:
+                weights.append(0.9)   # Early body — slightly fast
+            else:
+                weights.append(1.1)   # Late body — slightly slow
+        total_weight = sum(weights)
+        per_frame_list = [duration * w / total_weight for w in weights]
+
+    per_frame = sum(per_frame_list) / len(per_frame_list)  # average for backward compat
+
+    # Animate each frame with varied Ken Burns effects and varied durations
     animated = []
     for i, frame in enumerate(frames):
         anim = out_dir / f"anim_{i}.mp4"
-        animate_frame(frame, anim, per_frame + 0.1, effects[i % len(effects)])
+        frame_dur = per_frame_list[i] if i < len(per_frame_list) else per_frame
+        animate_frame(frame, anim, frame_dur + 0.1, effects[i % len(effects)])
         animated.append(anim)
 
     # Merge animated segments with varied transitions
@@ -66,10 +90,15 @@ def assemble_video(
         for a in animated:
             inputs += ["-i", str(a)]
 
+        # Compute cumulative offsets from variable frame durations
+        cumulative = [0.0]
+        for d in per_frame_list:
+            cumulative.append(cumulative[-1] + d)
+
         filter_parts = []
         prev_label = "[0:v]"
         for i in range(1, len(animated)):
-            offset = per_frame * i - xfade_dur * i
+            offset = cumulative[i] - xfade_dur * i
             out_label = f"[v{i}]" if i < len(animated) - 1 else "[vout]"
             transition = xfade_types[i % len(xfade_types)]
             filter_parts.append(
@@ -175,14 +204,53 @@ def assemble_video(
         except Exception as e:
             log(f"Remotion composite failed: {e} — captions may be missing")
 
-    # Post-processing: film grain + vignette + warm color grade
+    # SFX layer — whooshes at transitions, impacts on emphasis words
+    try:
+        from .sfx import generate_sfx_set, plan_sfx_placement, mix_sfx_track
+        # Use cumulative durations for transition timestamps
+        cum = [0.0]
+        for d in per_frame_list:
+            cum.append(cum[-1] + d)
+        transition_times = cum[1:-1]  # transitions between frames (not at start/end)
+        sfx_placements = plan_sfx_placement(words or [], transition_times, script or "")
+        if sfx_placements:
+            sfx_set = generate_sfx_set(out_dir)
+            sfx_track = out_dir / "sfx_mixed.mp3"
+            sfx_result = mix_sfx_track(sfx_placements, sfx_set, duration, sfx_track)
+            if sfx_result and sfx_result.exists():
+                # Mix SFX track into the assembled video
+                sfx_out = out_dir / "with_sfx.mp4"
+                run_cmd([
+                    "ffmpeg", "-i", str(out_path), "-i", str(sfx_result),
+                    "-filter_complex",
+                    "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[aout]",
+                    "-map", "0:v", "-map", "[aout]",
+                    "-c:v", "copy", "-c:a", "aac",
+                    str(sfx_out), "-y", "-loglevel", "quiet",
+                ])
+                sfx_out.rename(out_path)
+                log("SFX layer mixed into video")
+    except Exception as e:
+        log(f"SFX mixing failed: {e} — continuing without SFX")
+
+    # Post-processing: LUT + film grain + vignette + color grade
     # This removes the "clinically clean AI look"
     post_path = MEDIA_DIR / f"pipeline_{job_id}_{lang}_final.mp4"
-    post_vf = ",".join([
+    post_vf_parts = [
         "noise=c0s=6:c0f=t+u",       # subtle film grain (temporal + uniform)
         "vignette=PI/5",               # subtle edge darkening
         "eq=contrast=1.08:saturation=1.12",  # warm contrast boost
-    ])
+    ]
+
+    # Apply LUT if available — match to music mood
+    lut_dir = Path(__file__).resolve().parent.parent / "assets" / "luts"
+    mood_lut_map = {"tech": "cool_tech.cube", "dark": "dark_moody.cube"}
+    lut_file = lut_dir / mood_lut_map.get(mood or "", "warm_cinematic.cube")
+    if lut_file.exists():
+        escaped_lut = str(lut_file).replace("\\", "/").replace(":", "\\:")
+        post_vf_parts.insert(0, f"lut3d=file='{escaped_lut}'")
+
+    post_vf = ",".join(post_vf_parts)
     try:
         run_cmd([
             "ffmpeg", "-i", str(out_path),

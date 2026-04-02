@@ -55,7 +55,7 @@ class TestGenerateDraft:
         draft = generate_draft("Test")
         assert isinstance(draft["script"], str)
         assert isinstance(draft["broll_prompts"], list)
-        assert len(draft["broll_prompts"]) == 3  # fallback
+        assert len(draft["broll_prompts"]) == 8  # fallback
 
     @patch("pipeline.draft.research_topic")
     @patch("pipeline.draft._call_claude")
@@ -79,11 +79,11 @@ class TestGenerateDraft:
         mock_research.return_value = "research"
         mock_claude.return_value = json.dumps({
             "script": "s",
-            "broll_prompts": ["p1", "p2", "p3", "p4", "p5"],  # too many
+            "broll_prompts": [f"p{i}" for i in range(12)],  # too many
             "youtube_title": "T", "youtube_description": "D",
             "youtube_tags": "t", "instagram_caption": "C",
             "thumbnail_prompt": "P",
         })
 
         draft = generate_draft("Test")
-        assert len(draft["broll_prompts"]) == 3  # truncated to 3
+        assert len(draft["broll_prompts"]) == 8  # truncated to max 8

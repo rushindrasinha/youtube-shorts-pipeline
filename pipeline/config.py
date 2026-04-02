@@ -178,6 +178,10 @@ def get_elevenlabs_key() -> str:
     return _get_key("ELEVENLABS_API_KEY")
 
 
+def get_pexels_key() -> str:
+    return _get_key("PEXELS_API_KEY")
+
+
 def get_gemini_key() -> str:
     return _get_key("GEMINI_API_KEY")
 
@@ -235,7 +239,13 @@ def run_setup():
     if key:
         config["ELEVENLABS_API_KEY"] = key
 
-    print("\n3. Google Gemini API key (required — used for AI b-roll image generation)")
+    print("\n3. Pexels API key (optional — free stock video for b-roll variety)")
+    print("   Get yours at: https://www.pexels.com/api/")
+    key = getpass.getpass("   PEXELS_API_KEY (press Enter to skip): ").strip()
+    if key:
+        config["PEXELS_API_KEY"] = key
+
+    print("\n4. Google Gemini API key (required — used for AI b-roll image generation)")
     print("   Get yours at: https://aistudio.google.com/apikey")
     key = getpass.getpass("   GEMINI_API_KEY: ").strip()
     if key:
@@ -244,7 +254,7 @@ def run_setup():
     save_config(config)
     print(f"\n  Config saved to {CONFIG_FILE}")
 
-    print("\n4. YouTube OAuth setup")
+    print("\n5. YouTube OAuth setup")
     print("   You'll need a client_secret.json from Google Cloud Console.")
     print("   See references/setup.md for step-by-step instructions.")
     run_oauth = input("\n   Run YouTube OAuth now? (y/N): ").strip().lower()
