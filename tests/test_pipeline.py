@@ -26,22 +26,6 @@ def _make_produce_args(draft_path, lang="en", script=None, force=False):
     )
 
 
-def _stage_patches():
-    """Return the five decorator-style patches for the produce stage functions.
-
-    Because cmd_produce imports them with local imports (``from .broll import
-    generate_broll`` etc.), the names are resolved at call time from the
-    *source* module, so we patch them at the source.
-    """
-    return (
-        patch("pipeline.broll.generate_broll"),
-        patch("pipeline.voiceover.generate_voiceover"),
-        patch("pipeline.captions.generate_captions"),
-        patch("pipeline.music.select_and_prepare_music"),
-        patch("pipeline.assemble.assemble_video"),
-    )
-
-
 def _configure_stage_mocks(
     mock_assemble, mock_music, mock_captions, mock_voiceover, mock_broll,
     tmp_path,

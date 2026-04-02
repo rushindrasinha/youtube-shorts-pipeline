@@ -169,6 +169,20 @@ class TestAnimateFrame:
         assert "1.0+0.12*on/" in vf_arg
         assert "zoompan" in vf_arg
 
+    def test_pan_right_command(self, tmp_path, mocker):
+        mock_run = mocker.patch("pipeline.broll.run_cmd")
+        img_path = tmp_path / "frame.png"
+        out_path = tmp_path / "animated.mp4"
+        _make_test_image(img_path)
+
+        animate_frame(img_path, out_path, duration=3.0, effect="pan_right")
+
+        mock_run.assert_called_once()
+        cmd = mock_run.call_args[0][0]
+        vf_arg = cmd[cmd.index("-vf") + 1]
+        assert "0.15*iw*on/" in vf_arg
+        assert "zoompan" in vf_arg
+
     def test_zoom_out_command(self, tmp_path, mocker):
         mock_run = mocker.patch("pipeline.broll.run_cmd")
         img_path = tmp_path / "frame.png"

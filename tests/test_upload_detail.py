@@ -18,66 +18,6 @@ def _patch_sleep():
         yield
 
 
-class TestTagFiltering:
-    """Verify youtube_tags are split on comma and empty strings filtered out."""
-
-    def test_tags_filters_empty_strings(self):
-        """draft with youtube_tags: "" should produce tags=[] not [""]."""
-        draft = {"news": "topic", "youtube_tags": ""}
-        tags = [t for t in draft.get("youtube_tags", "").split(",") if t.strip()]
-        assert tags == []
-
-    def test_tags_splits_and_filters(self):
-        """draft with youtube_tags: "a,,b, ,c" should produce ["a", "b", "c"]."""
-        draft = {"news": "topic", "youtube_tags": "a,,b, ,c"}
-        tags = [t for t in draft.get("youtube_tags", "").split(",") if t.strip()]
-        assert tags == ["a", "b", "c"]
-
-    def test_tags_with_whitespace_only_entries(self):
-        """Whitespace-only entries between commas should be excluded."""
-        draft = {"news": "topic", "youtube_tags": "  ,  , alpha ,  "}
-        tags = [t for t in draft.get("youtube_tags", "").split(",") if t.strip()]
-        assert tags == [" alpha "]  # strip() is only for the truthiness check
-
-
-class TestTitleTruncation:
-    """Verify title is truncated to 100 characters."""
-
-    def test_title_truncated_to_100_chars(self):
-        long_title = "A" * 150
-        draft = {"news": "fallback", "youtube_title": long_title}
-        title = draft.get("youtube_title", draft["news"])[:100]
-        assert len(title) == 100
-        assert title == "A" * 100
-
-    def test_title_under_100_unchanged(self):
-        short_title = "Short Title"
-        draft = {"news": "fallback", "youtube_title": short_title}
-        title = draft.get("youtube_title", draft["news"])[:100]
-        assert title == "Short Title"
-
-    def test_title_falls_back_to_news(self):
-        draft = {"news": "News headline used as title"}
-        title = draft.get("youtube_title", draft["news"])[:100]
-        assert title == "News headline used as title"
-
-
-class TestPrivacyStatus:
-    """Verify the body always includes privacyStatus: private."""
-
-    def test_privacy_status_is_private(self):
-        body = {
-            "snippet": {
-                "title": "Test",
-                "tags": [],
-                "categoryId": "20",
-            },
-            "status": {"privacyStatus": "private", "selfDeclaredMadeForKids": False},
-        }
-        assert body["status"]["privacyStatus"] == "private"
-        assert body["status"]["selfDeclaredMadeForKids"] is False
-
-
 class TestOAuth:
     """Test credential refresh logic in upload_to_youtube."""
 
