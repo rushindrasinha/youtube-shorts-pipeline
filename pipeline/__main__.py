@@ -67,7 +67,7 @@ def cmd_produce(args):
     # B-roll
     if force or not state.is_done("broll"):
         try:
-            frames = generate_broll(draft.get("broll_prompts", ["Cinematic landscape"] * 3), work_dir)
+            frames = generate_broll(draft.get("broll_prompts", ["Cinematic landscape"] * 5), work_dir)
             state.complete_stage("broll", {"frames": [str(f) for f in frames]})
         except Exception as e:
             state.fail_stage("broll", str(e))
@@ -115,6 +115,7 @@ def cmd_produce(args):
             music_result = select_and_prepare_music(
                 vo_path, work_dir,
                 words=captions_result.get("words"),
+                topic=draft.get("news", ""),
             )
             state.complete_stage("music", {
                 "track_path": str(music_result.get("track_path", "")),

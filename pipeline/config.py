@@ -26,8 +26,8 @@ VIDEO_HEIGHT = 1920
 # ─────────────────────────────────────────────────────
 # Voice config — override via env or config.json
 # ─────────────────────────────────────────────────────
-VOICE_ID_EN = os.environ.get("VOICE_ID_EN", "JBFqnCBsd6RMkjVDRZzb")  # George
-VOICE_ID_HI = os.environ.get("VOICE_ID_HI", "JBFqnCBsd6RMkjVDRZzb")
+VOICE_ID_EN = os.environ.get("VOICE_ID_EN", "TX3LPaxmHKxFdv7VOQHJ")  # Liam — energetic, social media creator
+VOICE_ID_HI = os.environ.get("VOICE_ID_HI", "JBFqnCBsd6RMkjVDRZzb")  # George — warm storyteller, good Hindi
 
 STOPWORDS = {
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for", "of",

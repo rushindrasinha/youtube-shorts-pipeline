@@ -1,12 +1,33 @@
-"""Background music — track selection + volume ducking."""
+"""Background music — ElevenLabs AI generation + local fallback + volume ducking."""
 
 import random
 from pathlib import Path
 
-from .log import log
+import requests
 
-# Music directory ships with the package
+from .config import get_elevenlabs_key
+from .log import log
+from .retry import with_retry
+
+# Local music directory as fallback
 MUSIC_DIR = Path(__file__).resolve().parent.parent / "music"
+
+
+@with_retry(max_retries=2, base_delay=3.0)
+def _generate_music_elevenlabs(prompt: str, duration_ms: int, api_key: str) -> bytes:
+    """Generate background music via ElevenLabs Music API."""
+    r = requests.post(
+        "https://api.elevenlabs.io/v1/music",
+        headers={"xi-api-key": api_key, "Content-Type": "application/json"},
+        json={
+            "prompt": prompt,
+            "music_length_ms": duration_ms,
+        },
+        timeout=120,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"ElevenLabs Music {r.status_code}: {r.text[:200]}")
+    return r.content
 
 
 def _find_tracks() -> list[Path]:
@@ -83,25 +104,115 @@ def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float =
     return f"volume='if({condition_expr}, 0.12, 0.25)':eval=frame"
 
 
+# Genre-specific music prompts for professional-quality background tracks
+_MUSIC_PROMPTS = {
+    "tech": (
+        "Minimal electronic ambient, 85 BPM, C minor. "
+        "Soft synth pads with subtle vinyl crackle and tape hiss. "
+        "Muted kick drum every 4 beats. Warm analog feel. "
+        "Instrumental only, no vocals, no melody."
+    ),
+    "story": (
+        "Acoustic lo-fi, 70 BPM, G major. "
+        "Gentle fingerpicked nylon guitar with soft brush drums. "
+        "Warm room reverb, slight tape saturation. "
+        "Instrumental only, no vocals."
+    ),
+    "hype": (
+        "Upbeat trap-influenced lo-fi, 95 BPM, A minor. "
+        "808 sub bass, crispy hi-hats, filtered piano chords. "
+        "Energetic but not overwhelming. "
+        "Instrumental only, no vocals."
+    ),
+    "dark": (
+        "Dark ambient drone, 60 BPM, D minor. "
+        "Deep sub bass with distant reverb tails. "
+        "Sparse piano notes with heavy reverb. Mysterious tension. "
+        "Instrumental only, no vocals."
+    ),
+    "uplifting": (
+        "Uplifting cinematic instrumental, 110 BPM, C major. "
+        "Piano arpeggios, orchestral strings building, hopeful brass. "
+        "Warm and inspiring. "
+        "Instrumental only, no vocals."
+    ),
+    "default": (
+        "Chill lo-fi hip-hop instrumental, 80 BPM, E minor. "
+        "Rhodes electric piano with vinyl noise and tape wobble. "
+        "Soft boom-bap drums, subtle bass. Coffee shop warmth. "
+        "Instrumental only, no vocals."
+    ),
+}
+
+# Keyword-to-mood mapping
+_MOOD_KEYWORDS = {
+    "tech": ["ai", "gpt", "openai", "tech", "software", "code", "robot", "nvidia", "chip", "crypto", "bitcoin", "hack"],
+    "story": ["story", "history", "ancient", "journey", "life", "memoir", "biography"],
+    "hype": ["viral", "amazing", "incredible", "insane", "record", "fastest", "biggest", "win", "champion"],
+    "dark": ["dark", "crime", "mystery", "conspiracy", "secret", "terror", "war", "threat", "danger"],
+    "uplifting": ["inspire", "hope", "achieve", "success", "dream", "hero", "discover", "breakthrough", "moon", "mars", "space", "nasa"],
+}
+
+
+def _classify_mood(topic: str) -> str:
+    """Classify topic into a mood category for music selection."""
+    topic_lower = topic.lower()
+    scores = {}
+    for mood, keywords in _MOOD_KEYWORDS.items():
+        scores[mood] = sum(1 for kw in keywords if kw in topic_lower)
+    best = max(scores, key=scores.get)
+    return best if scores[best] > 0 else "default"
+
+
+def _build_music_prompt(topic: str) -> str:
+    """Build a genre-specific music prompt based on topic mood."""
+    mood = _classify_mood(topic)
+    base = _MUSIC_PROMPTS.get(mood, _MUSIC_PROMPTS["default"])
+    if topic:
+        return f"{base} Background for a YouTube Short about: {topic[:80]}."
+    return base
+
+
 def select_and_prepare_music(
     voiceover_path: Path,
     work_dir: Path,
     words: list[dict] | None = None,
+    topic: str = "",
 ) -> dict:
-    """Select a random track, build duck filter from speech regions.
+    """Generate or select background music, build duck filter from speech regions.
 
-    If `words` are provided (from the captions stage), they are reused for speech
-    region detection, avoiding a redundant Whisper transcription.
+    Tries ElevenLabs Music API first (AI-generated music matching the topic),
+    then falls back to local tracks in the music/ directory.
 
     Returns dict with track_path and duck_filter for use by assemble.py.
     """
-    tracks = _find_tracks()
-    if not tracks:
-        log("No music tracks found in music/ — skipping background music")
-        return {}
+    api_key = get_elevenlabs_key()
+    track_path = None
 
-    track = random.choice(tracks)
-    log(f"Selected music track: {track.name}")
+    # Try ElevenLabs AI music generation with genre-specific prompts
+    if api_key:
+        try:
+            from .assemble import get_audio_duration
+            duration = get_audio_duration(voiceover_path)
+            duration_ms = int(min(duration + 2, 59) * 1000)
+
+            prompt = _build_music_prompt(topic)
+            log(f"Generating background music via ElevenLabs ({_classify_mood(topic)} mood)...")
+            audio_bytes = _generate_music_elevenlabs(prompt, duration_ms, api_key)
+            track_path = work_dir / "music_ai.mp3"
+            track_path.write_bytes(audio_bytes)
+            log(f"AI music generated: {track_path.name} ({len(audio_bytes) // 1024}KB)")
+        except Exception as e:
+            log(f"ElevenLabs Music failed: {e} — trying local tracks")
+
+    # Fallback: local tracks
+    if not track_path:
+        tracks = _find_tracks()
+        if not tracks:
+            log("No music tracks available — skipping background music")
+            return {}
+        track_path = random.choice(tracks)
+        log(f"Selected local music track: {track_path.name}")
 
     # Get speech regions for ducking (reuse words from captions if available)
     speech_regions = _get_speech_regions(voiceover_path, words=words)
@@ -109,6 +220,6 @@ def select_and_prepare_music(
     log(f"Built duck filter with {len(speech_regions)} speech regions")
 
     return {
-        "track_path": str(track),
+        "track_path": str(track_path),
         "duck_filter": duck_filter,
     }

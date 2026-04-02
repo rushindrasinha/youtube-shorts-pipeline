@@ -19,7 +19,7 @@ def _generate_thumb_image(prompt: str, output_path: Path, api_key: str):
     """Generate a 16:9 thumbnail via Gemini native image generation."""
     url = (
         "https://generativelanguage.googleapis.com/v1beta"
-        "/models/gemini-2.0-flash-exp-image-generation:generateContent"
+        "/models/gemini-3.1-flash-image-preview:generateContent"
     )
     body = {
         "contents": [{"parts": [{"text": f"Generate a 16:9 landscape image: {prompt}"}]}],
