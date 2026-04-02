@@ -23,6 +23,14 @@ build/
 .venv/
 venv/
 .pytest_cache/
+.coverage
+
+# Node
+node_modules/
+
+# Claude Code
+.claude.local.md
+.claude/
 
 # OS
 .DS_Store
