@@ -144,6 +144,7 @@ def cmd_produce(args):
                 ass_path=captions_result.get("ass_path"),
                 music_path=music_result.get("track_path"),
                 duck_filter=music_result.get("duck_filter"),
+                remotion_overlay=captions_result.get("remotion_overlay"),
             )
             state.complete_stage("assemble", {"video_path": str(video_path)})
         except Exception as e:

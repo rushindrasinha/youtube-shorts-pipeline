@@ -26,7 +26,7 @@ VIDEO_HEIGHT = 1920
 # ─────────────────────────────────────────────────────
 # Voice config — override via env or config.json
 # ─────────────────────────────────────────────────────
-VOICE_ID_EN = os.environ.get("VOICE_ID_EN", "TX3LPaxmHKxFdv7VOQHJ")  # Liam — energetic, social media creator
+VOICE_ID_EN = os.environ.get("VOICE_ID_EN", "cgSgspJ2msm6clMCkdW9")  # Jessica — playful, bright, warm (female)
 VOICE_ID_HI = os.environ.get("VOICE_ID_HI", "JBFqnCBsd6RMkjVDRZzb")  # George — warm storyteller, good Hindi
 
 STOPWORDS = {

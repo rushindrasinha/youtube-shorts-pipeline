@@ -21,9 +21,9 @@ def _call_elevenlabs(script: str, voice_id: str, api_key: str) -> bytes:
             "text": script,
             "model_id": "eleven_v3",
             "voice_settings": {
-                "stability": 0.65,
-                "similarity_boost": 0.75,
-                "style": 0.0,  # v3 uses inline audio tags for expression
+                "stability": 0.30,  # low = more expressive, dynamic, human-like
+                "similarity_boost": 0.70,
+                "style": 0.45,  # higher = more dramatic delivery
                 "use_speaker_boost": True,
             },
         },

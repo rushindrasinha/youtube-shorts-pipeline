@@ -156,6 +156,80 @@ def _srt_time(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+def _render_remotion_captions(words: list[dict], work_dir: Path) -> Path | None:
+    """Render animated TikTok-style captions via Remotion as transparent overlay.
+
+    Returns path to transparent WebM overlay, or None if Remotion unavailable.
+    """
+    import json as _json
+    import shutil
+    import subprocess
+
+    if not shutil.which("npx"):
+        return None
+
+    remotion_dir = Path(__file__).resolve().parent.parent / "remotion"
+    if not (remotion_dir / "node_modules").exists():
+        log("Remotion not installed — using ASS captions")
+        return None
+
+    # Convert Whisper words to Remotion Caption format
+    captions = [
+        {
+            "text": f" {w['word']}" if i > 0 else w["word"],
+            "startMs": int(w["start"] * 1000),
+            "endMs": int(w["end"] * 1000),
+            "timestampMs": int((w["start"] + w["end"]) / 2 * 1000),
+            "confidence": None,
+        }
+        for i, w in enumerate(words)
+    ]
+    duration_ms = int(words[-1]["end"] * 1000) + 500 if words else 60000
+
+    # Write captions JSON to Remotion's public/ directory
+    captions_file = remotion_dir / "public" / "captions.json"
+    captions_file.parent.mkdir(parents=True, exist_ok=True)
+    captions_file.write_text(_json.dumps(captions))
+
+    # Write render props
+    props = {"captionsJsonFile": "captions.json", "durationMs": duration_ms}
+    props_file = work_dir / "remotion_props.json"
+    props_file.write_text(_json.dumps(props))
+
+    # Render transparent overlay (ProRes 4444 with alpha channel)
+    output = work_dir / "caption_overlay.mov"
+
+    try:
+        log("Rendering animated captions via Remotion...")
+        subprocess.run(
+            [
+                "npx", "remotion", "render",
+                "src/index.ts", "CaptionOverlay", str(output),
+                f"--props={props_file}",
+                "--codec=prores",
+                "--prores-profile=4444",
+                "--image-format=png",
+                "--pixel-format=yuva444p10le",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            cwd=str(remotion_dir),
+        )
+        log(f"Remotion caption overlay rendered: {output.name}")
+        return output
+    except FileNotFoundError:
+        log("npx not found — using ASS captions")
+        return None
+    except subprocess.TimeoutExpired:
+        log("Remotion render timed out — using ASS captions")
+        return None
+    except Exception as e:
+        log(f"Remotion render failed: {e} — using ASS captions")
+        return None
+
+
 def generate_captions(audio_path: Path, work_dir: Path, lang: str = "en") -> dict:
     """Generate captions: ASS (for burn-in) + SRT (for YouTube upload).
 
@@ -187,14 +261,19 @@ def generate_captions(audio_path: Path, work_dir: Path, lang: str = "en") -> dic
             log(f"Whisper CLI fallback failed: {e}")
         return result
 
-    # Generate SRT
+    # Generate SRT (always — needed for YouTube upload)
     srt_path = work_dir / f"captions_{lang}.srt"
     _generate_srt(words, srt_path)
     result["srt_path"] = str(srt_path)
 
-    # Generate ASS for burn-in
-    ass_path = work_dir / f"captions_{lang}.ass"
-    _generate_ass(words, ass_path)
-    result["ass_path"] = str(ass_path)
+    # Try Remotion animated captions first, fall back to ASS
+    overlay = _render_remotion_captions(words, work_dir)
+    if overlay:
+        result["remotion_overlay"] = str(overlay)
+    else:
+        # ASS burn-in as fallback
+        ass_path = work_dir / f"captions_{lang}.ass"
+        _generate_ass(words, ass_path)
+        result["ass_path"] = str(ass_path)
 
     return result

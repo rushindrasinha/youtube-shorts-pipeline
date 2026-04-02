@@ -8,7 +8,7 @@ from .config import MEDIA_DIR, run_cmd
 from .log import log
 
 # Allowlist for duck_filter values — matches output of music.build_duck_filter()
-# e.g. "volume=0.25" or "volume='if(between(t,0.30,1.50)+between(t,2.00,3.50), 0.12, 0.25)':eval=frame"
+# e.g. "volume=0.50" or "volume='if(between(t,0.30,1.50)+between(t,2.00,3.50), 0.25, 0.50)':eval=frame"
 _DUCK_FILTER_RE = re.compile(
     r"^volume=['\"]?[a-zA-Z0-9_()+.,/:' ]*['\"]?(?::eval=frame)?$"
 )
@@ -33,6 +33,7 @@ def assemble_video(
     ass_path: str | None = None,
     music_path: str | None = None,
     duck_filter: str | None = None,
+    remotion_overlay: str | None = None,
 ) -> Path:
     """Assemble final video from frames, voiceover, captions, and music."""
     log("Assembling video...")
@@ -92,11 +93,12 @@ def assemble_video(
     # Build the final ffmpeg command with optional captions + music
     out_path = MEDIA_DIR / f"pipeline_{job_id}_{lang}.mp4"
 
-    # Determine video filter (captions via ASS)
+    # Determine caption method: Remotion overlay (animated) or ASS burn-in (fallback)
+    use_remotion_overlay = remotion_overlay and Path(remotion_overlay).exists()
+
     vf_parts = []
-    if ass_path and Path(ass_path).exists():
-        # Escape special chars in path for ffmpeg filter
-        # Escape all ffmpeg filter-graph special characters in the ASS path
+    if not use_remotion_overlay and ass_path and Path(ass_path).exists():
+        # ASS burn-in fallback — escape all ffmpeg filter-graph special characters
         escaped_ass = (str(ass_path)
                        .replace("\\", "\\\\")
                        .replace(":", "\\:")
@@ -118,7 +120,7 @@ def assemble_video(
             # Validate duck_filter against allowlist (state file tamper defence)
             if not _DUCK_FILTER_RE.match(duck_filter):
                 log(f"Invalid duck_filter rejected: {duck_filter[:80]!r}")
-                duck_filter = "volume=0.25"
+                duck_filter = "volume=0.50"
             music_filter += f",{duck_filter}"
         music_filter += "[music]"
 
@@ -153,6 +155,25 @@ def assemble_video(
         ]
 
     run_cmd(cmd)
+
+    # Composite Remotion animated caption overlay (if available)
+    if use_remotion_overlay:
+        composited = out_dir / "composited.mp4"
+        try:
+            run_cmd([
+                "ffmpeg",
+                "-i", str(out_path),
+                "-i", str(remotion_overlay),
+                "-filter_complex", "[0:v][1:v]overlay=0:0:shortest=1[vout]",
+                "-map", "[vout]", "-map", "0:a",
+                "-c:v", "libx264", "-preset", "medium", "-pix_fmt", "yuv420p",
+                "-c:a", "copy",
+                str(composited), "-y", "-loglevel", "quiet",
+            ])
+            log("Remotion animated captions composited")
+            composited.rename(out_path)
+        except Exception as e:
+            log(f"Remotion composite failed: {e} — captions may be missing")
 
     # Post-processing: film grain + vignette + warm color grade
     # This removes the "clinically clean AI look"
