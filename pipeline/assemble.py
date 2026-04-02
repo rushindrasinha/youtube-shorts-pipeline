@@ -233,22 +233,25 @@ def assemble_video(
     except Exception as e:
         log(f"SFX mixing failed: {e} — continuing without SFX")
 
-    # Post-processing: LUT + film grain + vignette + color grade
+    # Post-processing: color grade + film grain + vignette
     # This removes the "clinically clean AI look"
     post_path = MEDIA_DIR / f"pipeline_{job_id}_{lang}_final.mp4"
+
+    # Mood-matched color grading (inline filters — no .cube LUT files needed)
+    mood_grade = {
+        "tech":  "colorbalance=rs=-0.08:gs=0.02:bs=0.08:rm=-0.05:gm=0.01:bm=0.06",
+        "dark":  "colorbalance=rs=-0.03:gs=-0.03:bs=0.03:rh=-0.02:gh=-0.02:bh=0.04",
+        "hype":  "colorbalance=rs=0.05:gs=-0.01:bs=-0.05:rm=0.04:bm=-0.03",
+        "uplifting": "colorbalance=rs=0.06:gs=0.02:bs=-0.04:rh=0.03:gh=0.01:bh=-0.02",
+    }
+    grade_filter = mood_grade.get(mood or "", "colorbalance=rs=0.05:gs=0.01:bs=-0.04")
+
     post_vf_parts = [
-        "noise=c0s=6:c0f=t+u",       # subtle film grain (temporal + uniform)
+        grade_filter,                  # mood-matched color grade
+        "noise=c0s=6:c0f=t+u",        # subtle film grain (temporal + uniform)
         "vignette=PI/5",               # subtle edge darkening
         "eq=contrast=1.08:saturation=1.12",  # warm contrast boost
     ]
-
-    # Apply LUT if available — match to music mood
-    lut_dir = Path(__file__).resolve().parent.parent / "assets" / "luts"
-    mood_lut_map = {"tech": "cool_tech.cube", "dark": "dark_moody.cube"}
-    lut_file = lut_dir / mood_lut_map.get(mood or "", "warm_cinematic.cube")
-    if lut_file.exists():
-        escaped_lut = str(lut_file).replace("\\", "/").replace(":", "\\:")
-        post_vf_parts.insert(0, f"lut3d=file='{escaped_lut}'")
 
     post_vf = ",".join(post_vf_parts)
     try:
