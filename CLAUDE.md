@@ -12,6 +12,10 @@
 - ElevenLabs keys can have per-key quota caps — check key settings if getting 401s with credits remaining
 - Gemini image models get deprecated frequently — verify model name if 404: `GET /v1beta/models?key=KEY`
 - Current models: `gemini-3.1-flash-image-preview` (images), `eleven_v3` (TTS), `claude-sonnet-4-6` (scripts)
+- Veo 3.1 Lite (`veo-3.1-lite-generate-preview`) for image-to-video — uses same GEMINI_API_KEY
+- `google-genai` SDK uses camelCase: `imageBytes`, `mimeType`, `durationSeconds` (int, not str), `aspectRatio`
+- Veo Lite only accepts even durations (4, 6, 8) — odd values return 400 INVALID_ARGUMENT
+- Veo free tier exhausts after ~9 clips/day — pipeline falls back to Ken Burns on 429
 - Pexels API key (optional, free) enables stock video in b-roll — without it, all frames are AI-generated
 
 ## Testing
@@ -24,7 +28,11 @@
 ## Architecture
 - CLI entry: `pipeline/__main__.py` → subcommands: draft, produce, upload, run, topics
 - Pipeline stages: research → draft → broll (AI + stock alternating) → voiceover → captions (Remotion or ASS) → music → sfx → assemble (+ overlay composite) → post-process → thumbnail → upload
-- `assemble_video()` accepts `words`, `script`, `mood` for SFX placement and color grading
+- `assemble_video()` accepts `words`, `script`, `mood`, `broll_prompts` for SFX placement, color grading, and Veo prompts
+- `animate_frame()` in broll.py: tries Veo → Ken Burns fallback. Pass `prompt=` for Veo motion direction
+- xfade offsets in assemble.py MUST use actual clip durations (ffprobe), not planned — Veo clips differ from plan
+- Pexels stock clips filtered by Gemini Flash vision before download — rejects pun/homonym mismatches
+- `extract_keywords()` stopwords include camera directions (close-up, cinematic, aerial) to improve stock search
 - State machine in draft JSON tracks stage completion — `--force` reruns all stages
 - All sensitive files written with 0o600 via `write_secret_file()` / `os.open()`
 - LLM prompt uses system/user separation (Anthropic `system=` param) for injection defense
@@ -59,3 +67,4 @@
 - Generate + produce: `yt-shorts draft --news "topic"` then `yt-shorts produce --draft PATH`
 - Topic discovery: `yt-shorts topics --limit 10`
 - CLI flag order matters: `python3 -m pipeline --verbose run --news "topic"` (--verbose before subcommand)
+- Cost per video: ~$2-3 (Veo even frames + free Pexels odd frames) or ~$0 with all-Pexels
