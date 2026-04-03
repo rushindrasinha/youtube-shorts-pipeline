@@ -68,9 +68,11 @@ def _check_relevance(thumbnail_url: str, prompt: str, gemini_key: str) -> bool:
                 "parts": [
                     {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}},
                     {"text": (
-                        f"Does this image match or relate to this scene description? "
-                        f"\"{prompt}\"\n"
-                        f"Answer only YES or NO."
+                        f"I need stock footage for a YouTube Short about finance/crypto. "
+                        f"The scene I need is: \"{prompt}\"\n"
+                        f"Does this image SPECIFICALLY depict that scene or something visually "
+                        f"close enough to use as b-roll? Reject anything that only matches on "
+                        f"a pun or unrelated meaning of a word. Answer only YES or NO."
                     )},
                 ],
             }],

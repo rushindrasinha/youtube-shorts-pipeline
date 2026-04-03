@@ -35,6 +35,10 @@ STOPWORDS = {
     "had", "will", "would", "could", "should", "may", "might", "that", "this",
     "these", "those", "it", "its", "new", "ahead", "as", "into", "up", "out",
     "over", "after",
+    # B-roll prompt scaffolding — not useful for stock footage search
+    "close-up", "closeup", "wide", "aerial", "cinematic", "dramatic", "slow-motion",
+    "time-lapse", "split", "screen", "screen:", "animated", "shot", "view", "angle",
+    "showing", "glowing", "rising", "versus", "past", "effect", "burst", "suited",
 }
 
 
