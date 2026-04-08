@@ -66,11 +66,24 @@ def _format_ass_time(seconds: float) -> str:
     return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
 
 
-def _generate_ass(words: list[dict], output_path: Path, video_width: int = 1080, video_height: int = 1920, highlight_color: str = "#FFFF00", group_size: int = 4):
+def _generate_ass(
+    words: list[dict],
+    output_path: Path,
+    video_width: int = 1080,
+    video_height: int = 1920,
+    highlight_color: str = "#FFFF00",
+    group_size: int = 4,
+    font_family: str = "Arial",
+    font_size: int = 72,
+):
     """Generate ASS subtitle file with word-by-word color highlighting.
 
-    White text for inactive words, yellow for current word.
+    White text for inactive words, highlight color for current word.
     Semi-transparent background, positioned at lower third (~70% down).
+
+    The font_family is taken from the niche profile (captions.font_family) so
+    non-Latin scripts (Korean, Japanese, Chinese, Arabic, etc.) can render
+    correctly. The default "Arial" preserves the original behavior for English.
     """
     # ASS header
     margin_v = int(video_height * 0.25)  # ~75% down from top = 25% from bottom
@@ -83,7 +96,7 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,3,0,2,40,40,{margin_v},1
+Style: Default,{font_family},{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,3,3,0,2,40,40,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -165,8 +178,18 @@ def generate_captions(
     lang: str = "en",
     highlight_color: str = "#FFFF00",
     words_per_group: int = 4,
+    font_family: str = "Arial",
+    font_size: int = 72,
 ) -> dict:
     """Generate captions: ASS (for burn-in) + SRT (for YouTube upload).
+
+    Args:
+        font_family: ASS Style font name. Use a CJK-capable font (e.g.
+            "Noto Sans CJK KR", "Noto Sans CJK JP") for non-Latin languages,
+            otherwise glyphs render as boxes. Pulled from the niche profile's
+            captions.font_family field.
+        font_size: ASS Style font size. Pulled from the niche profile's
+            captions.font_size field.
 
     Returns dict with keys: srt_path, ass_path, words (for music ducking).
     """
@@ -203,7 +226,13 @@ def generate_captions(
 
     # Generate ASS for burn-in (niche-aware highlight color)
     ass_path = work_dir / f"captions_{lang}.ass"
-    _generate_ass(words, ass_path, highlight_color=highlight_color, group_size=words_per_group)
+    _generate_ass(
+        words, ass_path,
+        highlight_color=highlight_color,
+        group_size=words_per_group,
+        font_family=font_family,
+        font_size=font_size,
+    )
     result["ass_path"] = str(ass_path)
 
     return result
