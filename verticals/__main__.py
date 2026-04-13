@@ -378,7 +378,7 @@ def main():
                 args.topic = candidates[int(choice) - 1].title
             else:
                 args.topic = choice
-    elif args.cmd in ("draft", "run") and not getattr(args, "news", None):
+    elif args.cmd in ("draft", "run") and not getattr(args, "topic", None):
         print("  Error: --topic or --discover required")
         sys.exit(1)
 
