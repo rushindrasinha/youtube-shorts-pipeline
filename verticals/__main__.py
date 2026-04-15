@@ -55,17 +55,17 @@ def cmd_produce(args):
     from .music import select_and_prepare_music
     from .assemble import assemble_video
     from .niche import load_niche, get_voice_config, get_caption_config, get_music_config
+    from .pipeline import StageRunner
     from .state import PipelineState
     import json
     import shutil
+    from pathlib import Path as _Path
 
     draft_path = Path(args.draft)
     draft = json.loads(draft_path.read_text())
     job_id = draft["job_id"]
     lang = args.lang
     state = PipelineState(draft)
-
-    # Load niche profile for voice/caption/music config
     niche_name = draft.get("niche", "general")
     profile = load_niche(niche_name)
 
@@ -78,90 +78,62 @@ def cmd_produce(args):
     script = getattr(args, "script", None) or (
         draft.get("script_hi") if lang == "hi" else draft.get("script")
     )
-
     print(f"\n  Producing {lang.upper()} video for job {job_id} [niche: {niche_name}]")
 
-    # B-roll
-    if force or not state.is_done("broll"):
-        frames = generate_broll(draft.get("broll_prompts", ["Cinematic landscape"] * 3), work_dir)
-        state.complete_stage("broll", {"frames": [str(f) for f in frames]})
-    else:
-        log("Skipping b-roll (already done)")
-        frames = [Path(f) for f in state.get_artifact("broll", "frames", [])]
+    runner = StageRunner(state, force=force)
 
-    # Voiceover (niche-aware voice selection)
-    if force or not state.is_done("voiceover"):
-        voice_config = get_voice_config(
-            profile,
-            provider=tts_provider or "edge_tts",
-            lang=lang,
-        )
-        vo_path = generate_voiceover(
-            script, work_dir, lang,
-            provider=tts_provider,
-            voice_config=voice_config,
-        )
-        state.complete_stage("voiceover", {"path": str(vo_path)})
-    else:
-        log("Skipping voiceover (already done)")
-        vo_path = Path(state.get_artifact("voiceover", "path"))
+    frames = runner.run(
+        "broll",
+        lambda: generate_broll(
+            draft.get("broll_prompts", ["Cinematic landscape"] * 3),
+            work_dir, topic=draft.get("topic", ""), niche=niche_name,
+        ),
+        "frames",
+        deserialize=_Path,
+    )
 
-    # Whisper + Captions (niche-aware styling)
+    voice_config = get_voice_config(profile, provider=tts_provider or "edge_tts", lang=lang)
+    vo_path = runner.run(
+        "voiceover",
+        lambda: generate_voiceover(script, work_dir, lang, provider=tts_provider, voice_config=voice_config),
+        "path",
+        deserialize=_Path,
+    )
+
     caption_config = get_caption_config(profile)
-    if force or not state.is_done("captions"):
-        captions_result = generate_captions(
+    captions_result = runner.run(
+        "captions",
+        lambda: generate_captions(
             vo_path, work_dir, lang,
             highlight_color=caption_config.get("highlight_color", "#FFFF00"),
             words_per_group=caption_config.get("words_per_group", 4),
-        )
-        state.complete_stage("captions", {
-            "srt_path": str(captions_result.get("srt_path", "")),
-            "ass_path": str(captions_result.get("ass_path", "")),
-        })
-    else:
-        log("Skipping captions (already done)")
-        captions_result = {
-            "srt_path": state.get_artifact("captions", "srt_path", ""),
-            "ass_path": state.get_artifact("captions", "ass_path", ""),
-        }
+        ),
+        "srt_path",
+    ) or {}
 
-    # Music (niche-aware mood/ducking)
     music_config = get_music_config(profile)
-    if force or not state.is_done("music"):
-        music_result = select_and_prepare_music(
+    music_result = runner.run(
+        "music",
+        lambda: select_and_prepare_music(
             vo_path, work_dir,
-            duck_speech=music_config.get("duck_volume_speech", 0.12),
-            duck_gap=music_config.get("duck_volume_gap", 0.25),
-        )
-        state.complete_stage("music", {
-            "track_path": str(music_result.get("track_path", "")),
-            "duck_filter": music_result.get("duck_filter", ""),
-        })
-    else:
-        log("Skipping music (already done)")
-        music_result = {
-            "track_path": state.get_artifact("music", "track_path", ""),
-            "duck_filter": state.get_artifact("music", "duck_filter", ""),
-        }
+            duck_speech=music_config.get("duck_volume_speech"),
+            duck_gap=music_config.get("duck_volume_gap"),
+        ),
+        "track_path",
+    ) or {}
 
-    # Assemble
-    if force or not state.is_done("assemble"):
-        video_path = assemble_video(
-            frames=frames,
-            voiceover=vo_path,
-            out_dir=work_dir,
-            job_id=job_id,
-            lang=lang,
+    video_path = runner.run(
+        "assemble",
+        lambda: assemble_video(
+            frames=frames, voiceover=vo_path, out_dir=work_dir, job_id=job_id, lang=lang,
             ass_path=captions_result.get("ass_path"),
             music_path=music_result.get("track_path"),
             duck_filter=music_result.get("duck_filter"),
-        )
-        state.complete_stage("assemble", {"video_path": str(video_path)})
-    else:
-        log("Skipping assembly (already done)")
-        video_path = Path(state.get_artifact("assemble", "video_path"))
+        ),
+        "video_path",
+        deserialize=_Path,
+    )
 
-    # Save SRT to media dir
     srt_path = captions_result.get("srt_path")
     if srt_path and Path(srt_path).exists():
         final_srt = MEDIA_DIR / f"verticals_{job_id}_{lang}.srt"
@@ -279,6 +251,22 @@ def cmd_niches(args):
             print(f"    {' ':20s}  {desc}")
 
 
+def cmd_analyze(args):
+    """Analyze YouTube channel and learn hooks."""
+    from .hook_analyzer import analyze_channel
+
+    channel = args.channel
+    niche = getattr(args, "niche", "general") or "general"
+    provider = getattr(args, "provider", None)
+    max_videos = getattr(args, "max_videos", 20)
+
+    print(f"\n  Analyzing: {channel}")
+    print(f"  Niche: {niche}")
+    print(f"  Max videos: {max_videos}\n")
+
+    analyze_channel(channel, niche, provider=provider, max_videos=max_videos)
+
+
 def main():
     if not CONFIG_FILE.exists():
         print("  First run detected. Running setup...")
@@ -342,6 +330,13 @@ def main():
     # niches
     sub.add_parser("niches", help="List available niche profiles")
 
+    # analyze
+    p_analyze = sub.add_parser("analyze", help="Learn hooks from YouTube channel")
+    p_analyze.add_argument("--channel", required=True, help="YouTube channel URL (@handle or https://youtube.com/@handle)")
+    p_analyze.add_argument("--niche", default="general", help=niche_help)
+    p_analyze.add_argument("--provider", default=None, help="LLM provider: claude, gemini, openai, ollama")
+    p_analyze.add_argument("--max-videos", type=int, default=20, help="Max videos to analyze")
+
     args = parser.parse_args()
 
     if args.verbose:
@@ -392,6 +387,8 @@ def main():
         cmd_run(args)
     elif args.cmd == "topics":
         cmd_topics(args)
+    elif args.cmd == "analyze":
+        cmd_analyze(args)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+from .config import CAPTION_BOTTOM_MARGIN_RATIO
 from .log import log
 
 
@@ -73,7 +74,7 @@ def _generate_ass(words: list[dict], output_path: Path, video_width: int = 1080,
     Semi-transparent background, positioned at lower third (~70% down).
     """
     # ASS header
-    margin_v = int(video_height * 0.25)  # ~75% down from top = 25% from bottom
+    margin_v = int(video_height * CAPTION_BOTTOM_MARGIN_RATIO)  # ~75% down from top = 25% from bottom
     header = f"""[Script Info]
 Title: Pipeline Captions
 ScriptType: v4.00+

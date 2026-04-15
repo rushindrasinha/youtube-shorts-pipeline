@@ -1,11 +1,11 @@
+from __future__ import annotations
 """NewsAPI topic source — requires NEWSAPI_KEY env var or config.json.
 
 Gracefully skipped if NEWSAPI_KEY is absent — no errors raised.
 Sign up at https://newsapi.org to get a free API key.
 """
 
-import requests
-
+from ..api_client import get_client
 from ..config import get_newsapi_key
 from ..log import log
 from .base import TopicCandidate, TopicSource
@@ -48,7 +48,7 @@ class NewsAPISource(TopicSource):
         query = self._query or _NICHE_QUERIES.get(self._niche, "trending")
 
         try:
-            resp = requests.get(
+            data = get_client().get_json(
                 "https://newsapi.org/v2/top-headlines",
                 params={
                     "q": query,
@@ -62,8 +62,7 @@ class NewsAPISource(TopicSource):
                 },
                 timeout=10,
             )
-            resp.raise_for_status()
-            articles = resp.json().get("articles", [])
+            articles = data.get("articles", [])
         except Exception as e:
             log(f"NewsAPI fetch failed: {e}")
             return []

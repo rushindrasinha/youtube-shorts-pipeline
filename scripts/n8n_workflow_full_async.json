@@ -1,0 +1,304 @@
+{
+  "name": "🎬 YouTube Shorts Factory (100% Free Async — Ollama + Redis)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyNMinutes",
+            "value": 60
+          }
+        ]
+      },
+      "id": "⏰ Schedule Trigger",
+      "name": "⏰ Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [50, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate 4-8 parallel video generation jobs\nconst batchSize = 6;  // Generate 6 videos in parallel\nconst jobs = [];\nfor (let i = 0; i < batchSize; i++) {\n  jobs.push({\n    jobId: `${Date.now()}_${i}`,\n    attempt: 1,\n    maxRetries: 2\n  });\n}\nreturn jobs;"
+      },
+      "id": "📋 Create Batch Jobs",
+      "name": "📋 Create Batch Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "loopOver": "=\\$json"
+      },
+      "id": "🔄 Process Each Video in Parallel",
+      "name": "🔄 Process Each Video in Parallel",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:11434/api/generate",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"model\": \"llama2:13b\",\n  \"prompt\": \"Generate a viral YouTube Shorts hook for Reddit stories. Return ONLY the hook sentence, nothing else. Make it shocking, question-based, or contrarian. Hook: \",\n  \"stream\": false,\n  \"temperature\": 0.8\n}",
+        "options": {}
+      },
+      "id": "🧠 Ollama: Generate Hook",
+      "name": "🧠 Ollama: Generate Hook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Ollama response and extract hook\nconst response = $json.body;\nif (!response || !response.response) {\n  return { error: 'Ollama failed to generate hook' };\n}\nconst hook = response.response.trim();\nreturn {\n  hook: hook,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "📝 Parse Hook Response",
+      "name": "📝 Parse Hook Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /project && python -m verticals topics --niche reddit_stories --limit 1 --output json",
+        "workingDirectory": "/project"
+      },
+      "id": "🔍 Discover Reddit Story",
+      "name": "🔍 Discover Reddit Story",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract topic from Verticals output\nconst output = $json.stdout || \"\";\nconst lines = output.split('\\n');\nconst topicLine = lines.find(l => l.match(/^\\s+\\d+\\./));\nif (!topicLine) {\n  return { error: 'No topics discovered' };\n}\nconst topic = topicLine.replace(/^\\s+\\d+\\.\\s+\\[.*?\\]\\s+/, '').trim();\nreturn { topic: topic };"
+      },
+      "id": "📖 Extract Topic",
+      "name": "📖 Extract Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /project && python -m verticals run --news '{{ $json.topic }}' --niche reddit_stories --provider ollama --voice edge --visuals pexels --lang en --headless --platform youtube",
+        "workingDirectory": "/project"
+      },
+      "id": "🎬 Generate Video (Full Pipeline)",
+      "name": "🎬 Generate Video (Full Pipeline)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1450, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "comparator": "equal",
+              "value1": "{{ $json.exitCode }}",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "✅ Video Success?",
+      "name": "✅ Video Success?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "text": "🎉 VIDEO GENERATED!\nTopic: {{ $json.topic }}\nTime: {{ now() }}\nJobID: {{ $('📋 Create Batch Jobs').json[0].jobId }}"
+      },
+      "id": "📨 Success Notification",
+      "name": "📨 Success Notification",
+      "type": "n8n-nodes-base.notificationUI",
+      "typeVersion": 1,
+      "position": [1850, 150]
+    },
+    {
+      "parameters": {
+        "text": "❌ Video generation failed\nError: {{ $json.stderr }}\nTopic: {{ $json.topic }}"
+      },
+      "id": "⚠️ Error Notification",
+      "name": "⚠️ Error Notification",
+      "type": "n8n-nodes-base.notificationUI",
+      "typeVersion": 1,
+      "position": [1850, 450]
+    },
+    {
+      "parameters": {
+        "loopOver": "=\\$json",
+        "options": {}
+      },
+      "id": "✔️ Combine Batch Results",
+      "name": "✔️ Combine Batch Results",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://discord.com/api/webhooks/YOUR_DISCORD_WEBHOOK_URL",
+        "method": "POST",
+        "headers": {},
+        "body": "{\n  \"content\": \"Batch complete! Generated {{ $('✔️ Combine Batch Results').json.length }} videos.\"\n}",
+        "options": {}
+      },
+      "id": "💬 Discord Summary (Optional)",
+      "name": "💬 Discord Summary (Optional)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2250, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "⏰ Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "📋 Create Batch Jobs",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Create Batch Jobs": {
+      "main": [
+        [
+          {
+            "node": "🔄 Process Each Video in Parallel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Process Each Video in Parallel": {
+      "main": [
+        [
+          {
+            "node": "🧠 Ollama: Generate Hook",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Ollama: Generate Hook": {
+      "main": [
+        [
+          {
+            "node": "📝 Parse Hook Response",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Parse Hook Response": {
+      "main": [
+        [
+          {
+            "node": "🔍 Discover Reddit Story",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Discover Reddit Story": {
+      "main": [
+        [
+          {
+            "node": "📖 Extract Topic",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📖 Extract Topic": {
+      "main": [
+        [
+          {
+            "node": "🎬 Generate Video (Full Pipeline)",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎬 Generate Video (Full Pipeline)": {
+      "main": [
+        [
+          {
+            "node": "✅ Video Success?",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Video Success?": {
+      "main": [
+        [
+          {
+            "node": "📨 Success Notification",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚠️ Error Notification",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📨 Success Notification": {
+      "main": [
+        [
+          {
+            "node": "✔️ Combine Batch Results",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚠️ Error Notification": {
+      "main": [
+        [
+          {
+            "node": "✔️ Combine Batch Results",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✔️ Combine Batch Results": {
+      "main": [
+        [
+          {
+            "node": "💬 Discord Summary (Optional)",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": "",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "staticData": null,
+  "tags": ["youtube", "shorts", "reddit", "free", "async", "ollama"],
+  "triggerCount": 0,
+  "updated": "2026-04-06T12:00:00Z",
+  "versionId": "2-full-async"
+}

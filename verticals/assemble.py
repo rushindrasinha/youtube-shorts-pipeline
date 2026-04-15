@@ -1,10 +1,18 @@
+from __future__ import annotations
 """ffmpeg video assembly — frames + voiceover + music + captions."""
 
 from pathlib import Path
 
 from .broll import animate_frame
-from .config import MEDIA_DIR, run_cmd
+from .config import MEDIA_DIR, VIDEO_WIDTH, VIDEO_HEIGHT, run_cmd
 from .log import log
+
+
+def _has_libass() -> bool:
+    """Check if the installed ffmpeg was built with libass (for subtitle burning)."""
+    import subprocess
+    r = subprocess.run(["ffmpeg", "-buildconf"], capture_output=True, text=True)
+    return "--enable-libass" in r.stdout + r.stderr
 
 
 def get_audio_duration(path: Path) -> float:
@@ -33,35 +41,45 @@ def assemble_video(
     per_frame = duration / len(frames)
     effects = ["zoom_in", "pan_right", "zoom_out"]
 
-    # Animate each frame with Ken Burns effect
-    animated = []
-    for i, frame in enumerate(frames):
-        anim = out_dir / f"anim_{i}.mp4"
-        animate_frame(frame, anim, per_frame + 0.1, effects[i % len(effects)])
-        animated.append(anim)
-
-    # Concat animated segments (escape single quotes for ffmpeg concat demuxer)
-    concat_file = out_dir / "concat.txt"
-    def _esc(p):
-        return str(p).replace("'", "'\\''" )
-    concat_file.write_text("\n".join(f"file '{_esc(p)}'" for p in animated))
-
+    # Create video from frames: extend each with black padding to match duration
     merged_video = out_dir / "merged_video.mp4"
+
+    # Create individual video clips from each frame (hold for per_frame duration)
+    video_clips = []
+    for i, frame in enumerate(frames):
+        clip_path = out_dir / f"clip_{i}.mp4"
+        run_cmd([
+            "ffmpeg", "-loop", "1", "-i", str(frame),
+            "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+            "-pix_fmt", "yuv420p",
+            "-vf", f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,pad={VIDEO_WIDTH}:{VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2",
+            "-t", str(per_frame + 0.1), "-y",
+            str(clip_path), "-loglevel", "quiet",
+        ])
+        video_clips.append(clip_path)
+
+    # Concatenate all video clips
+    concat_file = out_dir / "concat_clips.txt"
+    concat_lines = [f"file '{c}'" for c in video_clips]
+    concat_file.write_text("\n".join(concat_lines))
+
     run_cmd([
         "ffmpeg", "-f", "concat", "-safe", "0", "-i", str(concat_file),
-        "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
-        str(merged_video), "-y", "-loglevel", "quiet",
+        "-c:v", "copy", "-y",
+        str(merged_video), "-loglevel", "quiet",
     ])
 
     # Build the final ffmpeg command with optional captions + music
     out_path = MEDIA_DIR / f"verticals_{job_id}_{lang}.mp4"
 
-    # Determine video filter (captions via ASS)
+    # Determine video filter (captions via ASS — requires ffmpeg built with libass)
     vf_parts = []
     if ass_path and Path(ass_path).exists():
-        # Escape special chars in path for ffmpeg filter
-        escaped_ass = str(ass_path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
-        vf_parts.append(f"ass={escaped_ass}")
+        if _has_libass():
+            escaped_ass = str(ass_path).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'")
+            vf_parts.append(f"ass={escaped_ass}")
+        else:
+            log("⚠️  ffmpeg built without libass — skipping burned-in captions. SRT will still upload to YouTube.")
     vf = ",".join(vf_parts) if vf_parts else None
 
     if music_path and Path(music_path).exists():
@@ -99,7 +117,8 @@ def assemble_video(
             cmd += ["-vf", vf]
 
         cmd += [
-            "-c:v", "libx264" if vf else "copy",
+            "-map", "0:v", "-map", "1:a",
+            "-c:v", "libx264",
             "-c:a", "aac", "-shortest",
             str(out_path), "-y", "-loglevel", "quiet",
         ]

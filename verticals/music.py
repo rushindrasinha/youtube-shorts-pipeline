@@ -3,6 +3,7 @@
 import random
 from pathlib import Path
 
+from .config import MUSIC_DUCK_SPEECH, MUSIC_DUCK_GAP, MUSIC_MERGE_GAP_THRESHOLD
 from .log import log
 
 # Music directory ships with the package
@@ -31,7 +32,7 @@ def _get_speech_regions(audio_path: Path) -> list[tuple[float, float]]:
             region_end = words[0]["end"]
 
             for w in words[1:]:
-                if w["start"] - region_end < 0.5:
+                if w["start"] - region_end < MUSIC_MERGE_GAP_THRESHOLD:
                     region_end = w["end"]
                 else:
                     regions.append((region_start, region_end))
@@ -51,7 +52,7 @@ def _get_speech_regions(audio_path: Path) -> list[tuple[float, float]]:
         return [(0.0, 60.0)]
 
 
-def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float = 0.3, vol_speech: float = 0.12, vol_gap: float = 0.25) -> str:
+def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float = 0.3, vol_speech: float = MUSIC_DUCK_SPEECH, vol_gap: float = MUSIC_DUCK_GAP) -> str:
     """Build ffmpeg volume filter expression for ducking during speech.
 
     During speech: volume = vol_speech (default 0.12)
@@ -75,8 +76,8 @@ def build_duck_filter(speech_regions: list[tuple[float, float]], buffer: float =
 def select_and_prepare_music(
     voiceover_path: Path,
     work_dir: Path,
-    duck_speech: float = 0.12,
-    duck_gap: float = 0.25,
+    duck_speech: float = MUSIC_DUCK_SPEECH,
+    duck_gap: float = MUSIC_DUCK_GAP,
 ) -> dict:
     """Select a random track, build duck filter from speech regions.
 

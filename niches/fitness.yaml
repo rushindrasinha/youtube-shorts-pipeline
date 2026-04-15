@@ -68,4 +68,5 @@ thumbnail:
   max_words: 4
 discovery:
   reddit:
-    subreddits: ["fitness", "bodyweightfitness", "nutrition", "running", "loseit"]
+    subreddits:
+      ["fitness", "bodyweightfitness", "nutrition", "running", "loseit"]

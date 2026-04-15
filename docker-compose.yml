@@ -1,0 +1,132 @@
+version: "3.8"
+
+# v2.0: M1 Pro 32GB Optimized
+# Ollama (Qwen3:8b) + Redis (queue) + n8n (async orchestration)
+# Better models, smarter memory management, 24/7 background processing
+
+services:
+  # Ollama: Local LLM brain (Qwen3:8b = better storytelling than Llama)
+  # M1 Pro runs this comfortably with Metal acceleration
+  ollama:
+    image: ollama/ollama:latest
+    container_name: youtube_shorts_ollama_v2
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_MODELS=/root/.ollama/models
+      - OLLAMA_KEEP_ALIVE=5m # Keep model in memory for speed
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 14G # Safe on 32GB total
+        reservations:
+          memory: 10G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis: Queue manager for true async + parallel processing
+  # Enables 3-4 parallel video generations on M1 Pro
+  redis:
+    image: redis:7-alpine
+    container_name: youtube_shorts_redis_v2
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 4gb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # n8n: Workflow orchestration + queue mode (the orchestrator)
+  # Queue mode = background workers, UI stays responsive
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: youtube_shorts_n8n_v2
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Core n8n
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_TUNNEL_URL=http://localhost:5678
+
+      # Queue mode: Background workers + Redis
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=0
+
+      # Runners: Enable background job execution
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_POLL_INTERVAL=30
+
+      # Database
+      - DB_TYPE=sqlite
+      - DB_SQLITE_FILE=/home/node/.n8n/database.sqlite
+
+      # Security (change in production!)
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-change-me-to-random-32-char-string}
+
+      # Memory optimization for M1 Pro
+      - NODE_OPTIONS=--max-old-space-size=2048
+
+    volumes:
+      # Persist workflows, credentials, database
+      - ~/.n8n:/home/node/.n8n
+
+      # Mount project directory for direct CLI access
+      - .:/project
+
+      # Mount local verticals config
+      - ~/.verticals:/root/.verticals
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 2G
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Named volumes for persistence
+volumes:
+  ollama_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Network for inter-service communication
+networks:
+  default:
+    name: youtube_shorts_v2
+    driver: bridge

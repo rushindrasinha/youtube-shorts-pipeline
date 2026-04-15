@@ -1,0 +1,161 @@
+{
+  "name": "Reddit Stories → YouTube Shorts (Free Stack)",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyNMinutes",
+            "value": 360
+          }
+        ]
+      },
+      "id": "Schedule Trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /path/to/youtube-shorts-pipeline && python -m verticals topics --niche reddit_stories --limit 5",
+        "workingDirectory": "/tmp"
+      },
+      "id": "Discover Reddit Stories",
+      "name": "Discover Reddit Stories",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse discovered topics and pick the best one\nconst output = $('Discover Reddit Stories').stdout;\nconst lines = output.split('\\n');\nconst topics = lines.filter(l => l.match(/^\\s+\\d+\\./));\nif (topics.length === 0) {\n  return { error: 'No topics found' };\n}\nconst firstTopic = topics[0].replace(/^\\s+\\d+\\.\\s+\\[.*?\\]\\s+/, '').trim();\nreturn { topic: firstTopic };"
+      },
+      "id": "Pick Best Topic",
+      "name": "Pick Best Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /path/to/youtube-shorts-pipeline && python -m verticals run --niche reddit_stories --news '{{ $json.topic }}' --provider gemini --lang en",
+        "workingDirectory": "/tmp"
+      },
+      "id": "Generate & Upload Video",
+      "name": "Generate & Upload Video",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [950, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "comparator": "notEqual",
+              "value1": "{{ $json.exitCode }}",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "Check for Errors",
+      "name": "Check for Errors",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "message": "✓ Video generated and uploaded successfully!\n\nTopic: {{ $('Pick Best Topic').json.topic }}\nTime: {{ now() }}"
+      },
+      "id": "Success Notification",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.notificationUI",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "message": "✗ Video generation failed\n\nError: {{ $json.stderr }}\nTopic: {{ $('Pick Best Topic').json.topic }}"
+      },
+      "id": "Error Notification",
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.notificationUI",
+      "typeVersion": 1,
+      "position": [1450, 450]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Discover Reddit Stories",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discover Reddit Stories": {
+      "main": [
+        [
+          {
+            "node": "Pick Best Topic",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Best Topic": {
+      "main": [
+        [
+          {
+            "node": "Generate & Upload Video",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate & Upload Video": {
+      "main": [
+        [
+          {
+            "node": "Check for Errors",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for Errors": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Notification",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": "",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updated": "2026-04-06T12:30:00Z",
+  "versionId": "1"
+}

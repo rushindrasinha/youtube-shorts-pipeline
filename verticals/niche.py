@@ -9,6 +9,7 @@ import yaml
 from pathlib import Path
 from typing import Any
 
+from .config import MUSIC_DUCK_SPEECH, MUSIC_DUCK_GAP
 from .log import log
 
 # Niche profiles live in niches/ at the project root
@@ -68,6 +69,31 @@ def _minimal_profile(name: str) -> dict:
     }
 
 
+class ProfileConfigBuilder:
+    """Merge niche-profile section overrides onto a defaults dict.
+
+    Usage::
+
+        builder = ProfileConfigBuilder(profile)
+        config = builder.build("captions", {"highlight_color": "#FFFF00", ...})
+    """
+
+    def __init__(self, profile: dict):
+        self._profile = profile
+
+    def build(self, section: str, defaults: dict) -> dict:
+        """Return defaults updated with any values from profile[section].
+
+        Args:
+            section: Top-level key in the profile dict (e.g. "captions").
+            defaults: Fallback values used when the profile omits a key.
+
+        Returns:
+            New dict — never mutates either argument.
+        """
+        return {**defaults, **self._profile.get(section, {})}
+
+
 def get_script_context(profile: dict) -> str:
     """Build the script intelligence block for the LLM prompt.
 
@@ -107,6 +133,25 @@ def get_script_context(profile: dict) -> str:
         if hook_lines:
             parts.append("HOOK PATTERNS (pick the most appropriate for this topic):")
             parts.extend(hook_lines)
+
+    # Learned hooks (from top creators, high priority)
+    learned_hooks = profile.get("learned_hooks", [])
+    if learned_hooks:
+        learned_hook_lines = []
+        for h in learned_hooks:
+            template = h.get("template", "")
+            when = h.get("when", "")
+            avg_views = h.get("avg_views", 0)
+            if template:
+                line = f"  {h.get('id', 'learned')}: \"{template}\""
+                if when:
+                    line += f" (use when: {when})"
+                if avg_views:
+                    line += f" [avg views: {avg_views:,}]"
+                learned_hook_lines.append(line)
+        if learned_hook_lines:
+            parts.append("LEARNED HOOKS FROM TOP CREATORS (proven high-performing, HIGH PRIORITY):")
+            parts.extend(learned_hook_lines)
 
     # Structure guidance
     structure = script.get("structure", {})
@@ -192,9 +237,7 @@ def get_caption_config(profile: dict) -> dict:
         "background": "semi_transparent_dark",
         "words_per_group": 4,
     }
-    captions = profile.get("captions", {})
-    defaults.update(captions)
-    return defaults
+    return ProfileConfigBuilder(profile).build("captions", defaults)
 
 
 def get_music_config(profile: dict) -> dict:
@@ -203,22 +246,20 @@ def get_music_config(profile: dict) -> dict:
         "mood": "ambient, subtle, no lyrics",
         "energy": "medium",
         "tags": [],
-        "duck_volume_speech": 0.12,
-        "duck_volume_gap": 0.25,
+        "duck_volume_speech": MUSIC_DUCK_SPEECH,
+        "duck_volume_gap": MUSIC_DUCK_GAP,
     }
-    music = profile.get("music", {})
-    defaults.update(music)
-    return defaults
+    return ProfileConfigBuilder(profile).build("music", defaults)
 
 
 def get_thumbnail_config(profile: dict) -> dict:
     """Get thumbnail style guidance from the niche profile."""
-    return profile.get("thumbnail", {})
+    return ProfileConfigBuilder(profile).build("thumbnail", {})
 
 
 def get_discovery_config(profile: dict) -> dict:
     """Get topic discovery sources from the niche profile."""
-    return profile.get("discovery", {})
+    return ProfileConfigBuilder(profile).build("discovery", {})
 
 
 def list_niches() -> list[str]:

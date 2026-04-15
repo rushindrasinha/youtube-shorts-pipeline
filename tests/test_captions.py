@@ -96,8 +96,8 @@ class TestASSGeneration:
         output = tmp_work_dir / "test.ass"
         _generate_ass(sample_words, output)
         content = output.read_text()
-        # Yellow highlight color code
-        assert "\\c&H00FFFF&" in content
+        # Yellow highlight color: #FFFF00 → ASS BGR = &H0000FFFF&
+        assert "\\c&H0000FFFF&" in content
 
     def test_word_count_events(self, sample_words, tmp_work_dir):
         """Each word in each group gets one dialogue line as active."""

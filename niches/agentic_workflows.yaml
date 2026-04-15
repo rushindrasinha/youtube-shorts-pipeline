@@ -1,0 +1,58 @@
+name: agentic_workflows
+display_name: "AI Agents & Automation (v2.0)"
+description: "AI agents automating work, workflow breakthroughs, productivity hacks."
+
+llm:
+  model: qwen3:8b
+  provider: ollama
+  temperature: 0.85
+
+voice:
+  engine: kokoro
+  speaker: am_echo
+  speed: 1.0
+
+quality_gates:
+  min_upvotes: 500
+  min_comments: 35
+  hook_score_threshold: 0.86
+
+visuals:
+  fallback: pexels
+  premium_threshold: 0.90
+
+script:
+  tone: "practical, workflow-focused, exciting possibilities, results-oriented"
+  pacing: "brisk, action-oriented, shows transformation from chaos to order"
+  word_count: "155 to 180"
+
+  hooks:
+    - id: automation_breakthrough
+      template: "This AI agent just automated {hours} hours of work per week."
+      when: "time-saving automation or workflow improvement"
+    - id: before_after
+      template: "Without this agent: {chaos}. With it: {bliss}."
+      when: "clear before/after workflow transformation"
+    - id: scale_story
+      template: "{person/team} scaled {process} by {factor}x using AI agents."
+      when: "significant productivity multiplier"
+    - id: integration_victory
+      template: "We connected {tool1} to {tool2} using an AI agent. Everything changed."
+      when: "tool integration success or workflow unlock"
+    - id: cost_savings
+      template: "This AI workflow saved us ${amount}. Here's how."
+      when: "cost reduction or ROI story"
+
+  cta_variants:
+    - "What workflows would you automate with AI agents?"
+    - "Have you built an AI agent? Tell me about it below."
+    - "Subscribe for workflow automation hacks."
+    - "What's the tedious task you'd automate first?"
+
+discovery:
+  pexels:
+    search_query: "automation workflow process systems integration"
+    min_limit: 3
+  reddit:
+    subreddits: ["Automation", "productivity", "n8n", "workflow", "zapier"]
+    min_score: 350

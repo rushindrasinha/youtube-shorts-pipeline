@@ -92,7 +92,14 @@ script:
 visuals:
   style: "clean, minimal, dark backgrounds, neon accents"
   mood: "futuristic, sleek, professional"
-  subjects: ["circuit boards", "code on screens", "server rooms", "product shots", "data visualizations"]
+  subjects:
+    [
+      "circuit boards",
+      "code on screens",
+      "server rooms",
+      "product shots",
+      "data visualizations",
+    ]
   avoid: ["stock photo people smiling at laptops", "generic office", "clipart"]
 
 voice:
@@ -151,6 +158,7 @@ python -m verticals run --topic "your topic" --niche tech
 ## CLI Commands
 
 ### Full pipeline (topic to published Short)
+
 ```bash
 python -m verticals run --topic "headline" --niche tech
 python -m verticals run --topic "headline" --niche cooking --provider ollama
@@ -158,6 +166,7 @@ python -m verticals run --discover --niche gaming --auto-pick
 ```
 
 ### Individual stages
+
 ```bash
 python -m verticals draft --topic "headline" --niche tech
 python -m verticals produce --draft <path> --lang en
@@ -166,6 +175,7 @@ python -m verticals topics --niche tech --limit 20
 ```
 
 ### Useful flags
+
 ```
 --niche NAME         Niche profile (default: general)
 --provider NAME      LLM provider: claude, gemini, openai, ollama (default: claude)
@@ -182,40 +192,40 @@ python -m verticals topics --niche tech --limit 20
 
 ### LLM (script generation)
 
-| Provider | Cost | Setup | Notes |
-|----------|------|-------|-------|
-| **Claude** (Anthropic) | ~$0.02/script | `ANTHROPIC_API_KEY` | Best quality. Default. |
-| **Gemini** (Google) | Free tier available | `GEMINI_API_KEY` | Good quality, generous free tier. |
-| **GPT** (OpenAI) | ~$0.01/script | `OPENAI_API_KEY` | Solid alternative. |
-| **Ollama** (local) | Free | Install Ollama + pull model | No API key needed. Quality varies by model. |
-| **Claude CLI** | Free w/ Max sub | Install Claude Code | Uses Claude Max subscription, no API key. |
+| Provider               | Cost                | Setup                       | Notes                                       |
+| ---------------------- | ------------------- | --------------------------- | ------------------------------------------- |
+| **Claude** (Anthropic) | ~$0.02/script       | `ANTHROPIC_API_KEY`         | Best quality. Default.                      |
+| **Gemini** (Google)    | Free tier available | `GEMINI_API_KEY`            | Good quality, generous free tier.           |
+| **GPT** (OpenAI)       | ~$0.01/script       | `OPENAI_API_KEY`            | Solid alternative.                          |
+| **Ollama** (local)     | Free                | Install Ollama + pull model | No API key needed. Quality varies by model. |
+| **Claude CLI**         | Free w/ Max sub     | Install Claude Code         | Uses Claude Max subscription, no API key.   |
 
 ### TTS (voiceover)
 
-| Provider | Cost | Setup | Notes |
-|----------|------|-------|-------|
-| **Edge TTS** | Free | None | **Recommended default.** 300+ voices, cross platform. |
-| **ElevenLabs** | ~$0.05/video | `ELEVENLABS_API_KEY` | Most natural. Premium. |
-| **Kokoro** | Free | `pip install kokoro` | Local, open source. |
-| **macOS say** | Free | macOS only | Basic fallback. |
+| Provider       | Cost         | Setup                | Notes                                                 |
+| -------------- | ------------ | -------------------- | ----------------------------------------------------- |
+| **Edge TTS**   | Free         | None                 | **Recommended default.** 300+ voices, cross platform. |
+| **ElevenLabs** | ~$0.05/video | `ELEVENLABS_API_KEY` | Most natural. Premium.                                |
+| **Kokoro**     | Free         | `pip install kokoro` | Local, open source.                                   |
+| **macOS say**  | Free         | macOS only           | Basic fallback.                                       |
 
 ### Visuals (b roll)
 
-| Provider | Cost | Setup | Notes |
-|----------|------|-------|-------|
-| **Gemini Imagen** | Free tier available | `GEMINI_API_KEY` | Default. Good quality. |
-| **Replicate** | ~$0.01/image | `REPLICATE_API_TOKEN` | Flux, SDXL, more models. |
-| **Pexels** | Free | `PEXELS_API_KEY` | Stock footage. No generation. |
-| **ComfyUI** | Free (local GPU) | Running ComfyUI server | Best quality if you have hardware. |
+| Provider          | Cost                | Setup                  | Notes                              |
+| ----------------- | ------------------- | ---------------------- | ---------------------------------- |
+| **Gemini Imagen** | Free tier available | `GEMINI_API_KEY`       | Default. Good quality.             |
+| **Replicate**     | ~$0.01/image        | `REPLICATE_API_TOKEN`  | Flux, SDXL, more models.           |
+| **Pexels**        | Free                | `PEXELS_API_KEY`       | Stock footage. No generation.      |
+| **ComfyUI**       | Free (local GPU)    | Running ComfyUI server | Best quality if you have hardware. |
 
 ### Upload
 
-| Platform | Status | Auth |
-|----------|--------|------|
-| **YouTube** | Stable | OAuth (setup wizard) |
-| **TikTok** | v3.1 | Coming soon |
-| **Instagram Reels** | v3.1 | Coming soon |
-| **X (Twitter)** | v3.1 | Coming soon |
+| Platform            | Status | Auth                 |
+| ------------------- | ------ | -------------------- |
+| **YouTube**         | Stable | OAuth (setup wizard) |
+| **TikTok**          | v3.1   | Coming soon          |
+| **Instagram Reels** | v3.1   | Coming soon          |
+| **X (Twitter)**     | v3.1   | Coming soon          |
 
 ## $0.00 Mode (completely free)
 
@@ -236,14 +246,14 @@ Uses Ollama (local LLM), Edge TTS (free Microsoft voices), and Pexels (free stoc
 
 All keys stored in `~/.verticals/config.json` with 0600 permissions:
 
-| Variable | Required | Used By |
-|----------|----------|---------|
-| `ANTHROPIC_API_KEY` | If using Claude | Script generation |
-| `GEMINI_API_KEY` | If using Gemini visuals/LLM | B roll + thumbnails |
-| `OPENAI_API_KEY` | If using GPT | Script generation |
-| `ELEVENLABS_API_KEY` | If using ElevenLabs | Premium voiceover |
-| `REPLICATE_API_TOKEN` | If using Replicate | B roll images |
-| `PEXELS_API_KEY` | If using Pexels | Stock footage |
+| Variable              | Required                    | Used By             |
+| --------------------- | --------------------------- | ------------------- |
+| `ANTHROPIC_API_KEY`   | If using Claude             | Script generation   |
+| `GEMINI_API_KEY`      | If using Gemini visuals/LLM | B roll + thumbnails |
+| `OPENAI_API_KEY`      | If using GPT                | Script generation   |
+| `ELEVENLABS_API_KEY`  | If using ElevenLabs         | Premium voiceover   |
+| `REPLICATE_API_TOKEN` | If using Replicate          | B roll images       |
+| `PEXELS_API_KEY`      | If using Pexels             | Stock footage       |
 
 Environment variables override config file values.
 
@@ -255,17 +265,18 @@ Discover trending topics from multiple sources, filtered by niche relevance:
 python -m verticals topics --niche tech --limit 20
 ```
 
-| Source | Method | Auth | Niche Filtering |
-|--------|--------|------|-----------------|
-| Reddit | `.json` API | None | Subreddit mapping per niche |
-| RSS | feedparser | None | Configurable feeds per niche |
-| Google Trends | pytrends | None | Geo + category filtering |
-| Twitter/X | Public API | Optional | Keyword filtering |
-| TikTok | Apify | Optional | Hashtag mapping |
-| YouTube Trending | RSS/API | None | Category mapping |
-| Hacker News | API | None | Tech/startup default |
+| Source           | Method      | Auth     | Niche Filtering              |
+| ---------------- | ----------- | -------- | ---------------------------- |
+| Reddit           | `.json` API | None     | Subreddit mapping per niche  |
+| RSS              | feedparser  | None     | Configurable feeds per niche |
+| Google Trends    | pytrends    | None     | Geo + category filtering     |
+| Twitter/X        | Public API  | Optional | Keyword filtering            |
+| TikTok           | Apify       | Optional | Hashtag mapping              |
+| YouTube Trending | RSS/API     | None     | Category mapping             |
+| Hacker News      | API         | None     | Tech/startup default         |
 
 Configure per niche in your profile:
+
 ```yaml
 # In niches/tech.yaml
 discovery:
@@ -277,11 +288,11 @@ discovery:
 
 ## Cost Per Video
 
-| Configuration | Cost |
-|---------------|------|
+| Configuration                              | Cost   |
+| ------------------------------------------ | ------ |
 | **Premium** (Claude + Gemini + ElevenLabs) | ~$0.11 |
-| **Budget** (Gemini + Gemini + Edge TTS) | ~$0.04 |
-| **Free** (Ollama + Pexels + Edge TTS) | $0.00 |
+| **Budget** (Gemini + Gemini + Edge TTS)    | ~$0.04 |
+| **Free** (Ollama + Pexels + Edge TTS)      | $0.00  |
 
 ## Project Structure
 
@@ -371,13 +382,13 @@ All security measures from v2 carry forward, plus:
 ## Roadmap
 
 **v3.0** (this release)
-  Niche intelligence, multi provider LLM/TTS/image, Gradio UI, Colab notebook, Edge TTS default, Pexels stock footage, Docker support
+Niche intelligence, multi provider LLM/TTS/image, Gradio UI, Colab notebook, Edge TTS default, Pexels stock footage, Docker support
 
 **v3.1** (planned)
-  TikTok/Instagram/X upload, multi language niche profiles, A/B script variants (generate 2, pick better), scheduled batch production
+TikTok/Instagram/X upload, multi language niche profiles, A/B script variants (generate 2, pick better), scheduled batch production
 
 **v3.2** (planned)
-  Analytics integration (which Shorts performed best), niche profile auto tuning based on performance data, series support (multi episode narrative arcs)
+Analytics integration (which Shorts performed best), niche profile auto tuning based on performance data, series support (multi episode narrative arcs)
 
 ## Built By
 
@@ -391,11 +402,11 @@ Follow: [@irushi](https://twitter.com/irushi) on X · [@rushindrasinha](https://
 
 ## More From This Stack
 
-| Product | What it does |
-|---------|-------------|
-| [**verticals.gg**](https://verticals.gg) | Hosted version of this pipeline — no setup, no terminal, just results |
-| [**thumbnail.gg**](https://thumbnail.gg) | AI thumbnail generation with deep niche intelligence and CTR optimization |
-| [**aarees.com**](https://aarees.com) | The AI agent platform powering both products |
+| Product                                        | What it does                                                                           |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [**verticals.gg**](https://verticals.gg)       | Hosted version of this pipeline — no setup, no terminal, just results                  |
+| [**thumbnail.gg**](https://thumbnail.gg)       | AI thumbnail generation with deep niche intelligence and CTR optimization              |
+| [**aarees.com**](https://aarees.com)           | The AI agent platform powering both products                                           |
 | [**Global Esports**](https://globalesports.in) | South Asia's VCT Pacific franchise — where the esports niche profile was battle-tested |
 
 ---

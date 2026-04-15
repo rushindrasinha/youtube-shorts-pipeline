@@ -28,11 +28,13 @@ class TopicEngine:
         from .reddit import RedditSource
         from .rss import RSSSource
         from .google_trends import GoogleTrendsSource
+        from .pexels import PexelsSource
 
         source_map = {
             "reddit": RedditSource,
             "rss": RSSSource,
             "google_trends": GoogleTrendsSource,
+            "pexels": PexelsSource,
         }
 
         # Optional sources
@@ -67,7 +69,7 @@ class TopicEngine:
                     src_cfg.setdefault("niche", self._niche)
 
             # NewsAPI enabled if key is present (checked by is_available); others default on/off
-            default_enabled = name in ("reddit", "rss", "google_trends", "newsapi")
+            default_enabled = name in ("reddit", "rss", "google_trends", "newsapi", "pexels")
             if src_cfg.get("enabled", default_enabled):
                 try:
                     self._sources.append(cls(src_cfg))

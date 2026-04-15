@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Script generation with niche intelligence.
 
 Uses the niche profile to shape every aspect of the script:

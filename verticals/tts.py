@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Multi-provider TTS — Edge TTS (free default), ElevenLabs (premium), macOS say (fallback).
 
 Edge TTS is the recommended default: free, cross-platform, 300+ voices, no API key.
@@ -10,7 +11,9 @@ from pathlib import Path
 
 import requests
 
+from .async_helpers import run_async
 from .config import VOICE_ID_EN, VOICE_ID_HI, get_elevenlabs_key, run_cmd
+from .fallback import FallbackChain
 from .log import log
 from .retry import with_retry
 
@@ -21,7 +24,7 @@ from .retry import with_retry
 
 # Default Edge TTS voices per language
 EDGE_VOICES = {
-    "en": "en-US-GuyNeural",
+    "en": "en-US-AndrewMultilingualNeural",
     "hi": "hi-IN-MadhurNeural",
     "es": "es-MX-JorgeNeural",
     "pt": "pt-BR-AntonioNeural",
@@ -41,33 +44,69 @@ async def _edge_tts_generate(text: str, voice: str, output_path: Path):
 
 def _generate_edge_tts(script: str, out_dir: Path, lang: str, voice_override: str = "") -> Path:
     """Generate voiceover via Edge TTS (free Microsoft voices)."""
-    import asyncio
-
     voice = voice_override or EDGE_VOICES.get(lang[:2], EDGE_VOICES["en"])
     out_path = out_dir / f"voiceover_{lang}.mp3"
 
     log(f"Generating {lang} voiceover via Edge TTS (voice: {voice})...")
 
     try:
-        # Handle event loop — works whether called from sync or async context
-        try:
-            loop = asyncio.get_running_loop()
-            # Already in an async context, create a new thread
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = pool.submit(
-                    asyncio.run,
-                    _edge_tts_generate(script, voice, out_path)
-                )
-                future.result(timeout=60)
-        except RuntimeError:
-            # No running loop, safe to use asyncio.run
-            asyncio.run(_edge_tts_generate(script, voice, out_path))
-
+        run_async(_edge_tts_generate(script, voice, out_path), timeout=60)
         log(f"Edge TTS voiceover saved: {out_path.name}")
         return out_path
     except Exception as e:
         raise RuntimeError(f"Edge TTS failed: {e}")
+
+
+# ─────────────────────────────────────────────────────
+# Kokoro TTS — free, local, #1 on HuggingFace TTS Arena (Jan 2026)
+# 82M params, runs on CPU, Apache 2.0 license
+# Install: pip install "kokoro==0.7.16" soundfile && brew install espeak-ng
+# ─────────────────────────────────────────────────────
+
+KOKORO_VOICES = {
+    "en": "am_adam",       # measured male, great for science narration
+    "en_female": "bf_emma", # British female, clean and authoritative
+}
+
+
+def _generate_kokoro(script: str, out_dir: Path, lang: str, voice_override: str = "") -> Path:
+    """Generate voiceover via Kokoro TTS (free, local, high quality)."""
+    try:
+        from kokoro import KPipeline
+        import soundfile as sf
+        import numpy as np
+    except ImportError:
+        raise RuntimeError(
+            "Kokoro not installed. Run:\n"
+            "  pip install 'kokoro==0.7.16' soundfile\n"
+            "  brew install espeak-ng"
+        )
+
+    voice = voice_override or KOKORO_VOICES.get(lang[:2], KOKORO_VOICES["en"])
+    out_path = out_dir / f"voiceover_{lang}.wav"
+    mp3_path = out_dir / f"voiceover_{lang}.mp3"
+
+    log(f"Generating {lang} voiceover via Kokoro TTS (voice: {voice})...")
+
+    lang_code = "a" if lang.startswith("en") else lang[:2]
+    pipeline = KPipeline(lang_code=lang_code)
+
+    audio_chunks = []
+    for _, _, audio in pipeline(script, voice=voice, speed=0.95):
+        audio_chunks.append(audio)
+
+    audio_data = np.concatenate(audio_chunks)
+    sf.write(str(out_path), audio_data, 24000)
+
+    # Convert wav → mp3
+    run_cmd([
+        "ffmpeg", "-i", str(out_path), "-acodec", "libmp3lame", "-q:a", "2",
+        str(mp3_path), "-y", "-loglevel", "quiet",
+    ])
+    out_path.unlink(missing_ok=True)
+
+    log(f"Kokoro voiceover saved: {mp3_path.name}")
+    return mp3_path
 
 
 # ─────────────────────────────────────────────────────
@@ -155,7 +194,13 @@ def get_tts_provider(name: str | None = None) -> str:
     if from_cfg:
         return from_cfg
 
-    # Auto-detect: Edge TTS first (free, cross-platform)
+    # Auto-detect: Kokoro first (best free quality), then Edge TTS, then ElevenLabs
+    try:
+        import kokoro  # noqa: F401
+        return "kokoro"
+    except ImportError:
+        pass
+
     try:
         import edge_tts  # noqa: F401
         return "edge"
@@ -199,34 +244,28 @@ def generate_voiceover(
     """
     provider = get_tts_provider(provider)
     voice_config = voice_config or {}
+    voice_override = voice_config.get("voice_id", "")
 
-    if provider == "edge":
-        voice_override = voice_config.get("voice_id", "")
-        try:
-            return _generate_edge_tts(script, out_dir, lang, voice_override)
-        except Exception as e:
-            log(f"Edge TTS failed: {e}")
-            # Fall through to next provider
-            if get_elevenlabs_key():
-                log("Falling back to ElevenLabs...")
-                provider = "elevenlabs"
-            else:
-                log("Falling back to macOS say...")
-                return _generate_say(script, out_dir)
+    # Build a fallback chain rooted at the resolved provider.
+    # Providers earlier in the preference order than the resolved one are skipped.
+    order = ["kokoro", "edge", "elevenlabs", "say"]
+    start = order.index(provider) if provider in order else 0
 
-    if provider == "elevenlabs":
-        try:
-            return _generate_elevenlabs(
+    chain = FallbackChain("tts")
+    if start <= order.index("kokoro"):
+        chain.add("kokoro", lambda: _generate_kokoro(script, out_dir, lang, voice_override))
+    if start <= order.index("edge"):
+        chain.add("edge", lambda: _generate_edge_tts(script, out_dir, lang, voice_override))
+    if start <= order.index("elevenlabs"):
+        chain.add(
+            "elevenlabs",
+            lambda: _generate_elevenlabs(
                 script, out_dir, lang,
                 voice_id=voice_config.get("voice_id", ""),
                 settings=voice_config.get("settings"),
-            )
-        except Exception as e:
-            log(f"ElevenLabs failed: {e}")
-            log("Falling back to macOS say...")
-            return _generate_say(script, out_dir)
+            ),
+            condition=get_elevenlabs_key,
+        )
+    chain.add("say", lambda: _generate_say(script, out_dir))
 
-    if provider == "say":
-        return _generate_say(script, out_dir)
-
-    raise ValueError(f"Unknown TTS provider: {provider}")
+    return chain.execute()
