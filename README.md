@@ -1,10 +1,12 @@
 # Verticals v3
 
-**The open source AI content engine with built in niche intelligence.**
+**The open source AI content engine with built-in niche intelligence.**
 
 > Topic in. Published Short out. Any niche. ~$0.11 per video.
 >
-> **[Try it in Google Colab](link) · [Web UI](#web-ui) · [CLI Quickstart](#cli-quickstart) · [Hosted Version](https://verticals.gg)**
+> **[Quickstart](#quickstart) · [Hosted Version](https://verticals.gg)**
+
+> Repo note: the product is called **Verticals v3**. The GitHub repository is `youtube-shorts-pipeline`.
 
 ```
 python -m verticals run --topic "Sam Altman just mass-fired 200 safety researchers" --niche tech
@@ -116,7 +118,7 @@ thumbnail:
   text_position: "left_aligned"
 ```
 
-**15 built in niches:** tech, gaming, finance, fitness, cooking, travel, true_crime, science, politics, entertainment, sports, fashion, education, motivation, comedy.
+**15 built-in niches:** tech, gaming, finance, fitness, cooking, travel, true_crime, science, politics, entertainment, sports, fashion, education, motivation, comedy.
 
 **Build your own** by copying any profile and editing it. Drop the YAML in `niches/` and reference it with `--niche your_niche_name`.
 
@@ -124,13 +126,13 @@ thumbnail:
 
 ### Option A: Google Colab (zero install)
 
-Open the [Colab notebook](link), paste your API keys, pick a niche, enter a topic, click Run. Done.
+Colab support is planned, but the notebook is not published in this repo yet. Use the hosted version, Web UI, or CLI for now.
 
 ### Option B: Web UI (Gradio)
 
 ```bash
-git clone https://github.com/rushindrasinha/verticals.git
-cd verticals
+git clone https://github.com/rushindrasinha/youtube-shorts-pipeline.git
+cd youtube-shorts-pipeline
 pip install -r requirements.txt
 python -m verticals ui
 ```
@@ -140,8 +142,8 @@ Opens a browser UI at `localhost:7860`. Pick a niche, enter a topic, click Gener
 ### Option C: CLI (developers)
 
 ```bash
-git clone https://github.com/rushindrasinha/verticals.git
-cd verticals
+git clone https://github.com/rushindrasinha/youtube-shorts-pipeline.git
+cd youtube-shorts-pipeline
 pip install -r requirements.txt
 
 # First run triggers setup wizard (API keys)
