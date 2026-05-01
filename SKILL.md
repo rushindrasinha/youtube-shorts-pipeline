@@ -10,9 +10,9 @@ AI-native vertical video engine: topic + niche -> research -> script -> visuals 
 ## Commands
 
 ```bash
-python -m verticals run --news "headline" --niche tech
+python -m verticals run --topic "headline" --niche tech
 python -m verticals run --discover --auto-pick --niche gaming
-python -m verticals draft --news "headline" --niche finance --provider gemini
+python -m verticals draft --topic "headline" --niche finance --provider gemini
 python -m verticals produce --draft <path> --voice edge
 python -m verticals topics --niche tech --limit 20
 python -m verticals niches

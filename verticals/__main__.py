@@ -22,9 +22,9 @@ def cmd_draft(args):
     platform = getattr(args, "platform", "shorts") or "shorts"
     provider = getattr(args, "provider", None)
 
-    print(f"\n  Drafting: {args.news} [niche: {niche}, platform: {platform}]\n")
+    print(f"\n  Drafting: {args.topic} [niche: {niche}, platform: {platform}]\n")
     draft = generate_draft(
-        args.news,
+        args.topic,
         getattr(args, "context", ""),
         niche=niche,
         platform=platform,
@@ -298,7 +298,7 @@ def main():
 
     # draft
     p_draft = sub.add_parser("draft", help="Generate script + metadata")
-    p_draft.add_argument("--news", required=False, help="Topic/news headline")
+    p_draft.add_argument("--topic", required=False, help="Topic/news headline")
     p_draft.add_argument("--context", default="", help="Channel context")
     p_draft.add_argument("--niche", default="general", help=niche_help)
     p_draft.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
@@ -323,7 +323,7 @@ def main():
 
     # run (full pipeline)
     p_run = sub.add_parser("run", help="Full pipeline: draft -> produce -> upload")
-    p_run.add_argument("--news", required=False, help="Topic/news headline")
+    p_run.add_argument("--topic", required=False, help="Topic/news headline")
     p_run.add_argument("--niche", default="general", help=niche_help)
     p_run.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
     p_run.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
@@ -363,23 +363,23 @@ def main():
         engine = TopicEngine(niche=niche)
         candidates = engine.discover(limit=15)
         if not candidates:
-            print("  No trending topics found. Use --news instead.")
+            print("  No trending topics found. Use --topic instead.")
             sys.exit(1)
 
         if getattr(args, "auto_pick", False):
-            args.news = engine.auto_pick(candidates)
-            print(f"  Auto-picked: {args.news}")
+            args.topic = engine.auto_pick(candidates)
+            print(f"  Auto-picked: {args.topic}")
         else:
             print("\n  Trending topics:\n")
             for i, t in enumerate(candidates, 1):
                 print(f"  {i:2d}. [{t.source}] {t.title}")
             choice = input("\n  Pick a number (or enter custom topic): ").strip()
             if choice.isdigit() and 1 <= int(choice) <= len(candidates):
-                args.news = candidates[int(choice) - 1].title
+                args.topic = candidates[int(choice) - 1].title
             else:
-                args.news = choice
-    elif args.cmd in ("draft", "run") and not getattr(args, "news", None):
-        print("  Error: --news or --discover required")
+                args.topic = choice
+    elif args.cmd in ("draft", "run") and not getattr(args, "topic", None):
+        print("  Error: --topic or --discover required")
         sys.exit(1)
 
     if args.cmd == "draft":
