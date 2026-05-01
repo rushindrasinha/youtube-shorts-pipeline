@@ -1,67 +1,123 @@
 name: science
 display_name: "Science & Discovery"
-description: "For channels covering scientific breakthroughs, space, nature, and research."
+description: "For channels covering scientific breakthroughs, space, nature, psychology, and research."
 script:
-  tone: "curious, awestruck, accessible, makes complex things simple"
-  pacing: "builds from simple to mind blowing"
-  perspective: "enthusiastic guide making science tangible"
-  word_count: "150 to 170"
+  tone: "curious, awestruck, accessible — makes complex things feel urgent and personal"
+  pacing: "140-155 words per minute. Sentence length: 8-12 words max, never exceed 18. Builds from simple to mind-blowing."
+  perspective: "enthusiastic guide making science tangible — you are the viewer's smart friend, not a lecturer"
+  word_count: "140 to 160"
   hooks:
-    - id: mind_blow
-      template: "Scientists just discovered something that rewrites what we know about {topic}."
-      when: "breakthrough research"
-    - id: scale
+    - id: shocking_stat
+      template: "{statistic} — and most people have no idea."
+      when: "topic has a surprising number or percentage"
+    - id: scale_comparison
       template: "If {thing} were the size of {comparison}, {mind_blowing_fact}."
       when: "scale comparison for cosmic or micro topics"
+    - id: wrong_callout
+      template: "Everything you learned about {topic} is wrong."
+      when: "common misconception can be debunked"
+    - id: mystery_open
+      template: "This {animal/object/phenomenon} shouldn't exist. But it does."
+      when: "topic defies intuition or conventional logic"
+    - id: countdown_stakes
+      template: "In {timeframe}, {catastrophic or amazing thing}. Here's why."
+      when: "topic has time-pressure, urgency, or scale stakes"
     - id: question
       template: "Why does {phenomenon} happen? The answer took scientists {timeframe} to figure out."
-      when: "explained phenomenon"
+      when: "explained phenomenon with surprising discovery history"
+  structure:
+    opening: |
+      HOOK (0-3s, under 10 words). Stop the scroll.
+      Use one of the hook templates above. Never start with 'Did you know'.
+    context: |
+      CONTEXT (3-10s). Why should the viewer care right now?
+      One sentence. Make it personal or stakes-based.
+    mechanism: |
+      MECHANISM (10-40s). The actual science.
+      One analogy per concept. Never more than two concepts per video.
+      Short sentences. Active voice. No jargon without instant plain-English follow-up.
+    payoff: |
+      PAYOFF (40-50s). The 'so what'. Why this changes how we see the world.
+      This is the emotional peak. Make it land.
+    closing: |
+      LOOP + CTA (50-60s). Echo the opening hook in the final sentence to create a retention loop.
+      Use one CTA variant. Do not stack multiple CTAs.
   cta_variants:
     - "Follow for daily science in 60 seconds."
-    - "Subscribe for discoveries that blow your mind."
-    - "Did you know this? Comment below."
+    - "Subscribe — new discovery every day."
+    - "Did you know this? Drop it in the comments."
+    - "Follow if this blew your mind."
   forbidden_phrases:
     - "scientists baffled"
     - "they don't want you to know"
     - "quantum"
-  structure:
-    opening: "Start with the wow. The result, not the method."
-    middle: "Simplify without dumbing down. One analogy per concept."
-    closing: "Why this matters for the future. CTA."
+    - "Did you know"
+    - "In this video"
+    - "like and subscribe"
+    - "smash that bell"
 visuals:
-  style: "cosmic, microscopic, natural wonder, high production value"
-  mood: "awe inspiring, vast, beautiful, wonder"
+  style: "cosmic, microscopic, natural wonder — cinematic and high production feel"
+  mood: "awe-inspiring, vast, beautiful, wonder"
   color_palette: ["#0B0B2B", "#1B1464", "#3D5AF1", "#22D1EE", "#FFFFFF"]
   subjects:
     prefer:
-      - "space nebula or galaxy"
-      - "microscope imagery"
-      - "natural phenomenon"
-      - "laboratory with dramatic lighting"
+      - "space nebula or galaxy with dramatic lighting"
+      - "extreme close-up microscope imagery"
+      - "natural phenomenon (lightning, bioluminescence, crystallization)"
+      - "laboratory with dramatic chiaroscuro lighting"
+      - "cross-section or cutaway scientific visualization"
     avoid:
       - "cartoon science illustrations"
-      - "clipart atoms"
-      - "stock photo scientist"
-  prompt_suffix: "scientific visualization, awe inspiring, dramatic scale, NASA quality, cinematic"
+      - "clipart atoms or DNA strands"
+      - "stock photo of smiling scientist in lab coat"
+      - "generic blue tech background"
+  prompt_suffix: "scientific visualization, awe-inspiring, dramatic scale, NASA quality, cinematic lighting, 9:16 portrait, photorealistic"
 voice:
-  pace: "measured, approximately 150 words per minute"
-  energy: "curious, building excitement"
+  pace: "140-155 words per minute — measured and deliberate, builds to excitement"
+  energy: "curious and building — starts grounded, peaks at payoff"
+  pauses: "0.3s pause after hook. 0.5s pause before payoff. 0.3s pause after any surprising fact."
   suggested_voices:
     edge_tts:
-      en: "en-US-GuyNeural"
+      en: "en-US-AndrewMultilingualNeural"
+      en_alt: "en-GB-RyanNeural"
+      en_female: "en-US-EmmaMultilingualNeural"
+    kokoro:
+      en: "am_adam"
+      en_female: "bf_emma"
 captions:
   highlight_color: "#22D1EE"
-  words_per_group: 4
+  words_per_group: 3
+  font: "bold, clean sans-serif"
 music:
-  mood: "cosmic ambient, wonder, hans zimmer inspired, no lyrics"
-  energy: "medium, building"
-  tags: ["cosmic", "ambient", "wonder", "cinematic", "space"]
-  duck_volume_speech: 0.10
-  duck_volume_gap: 0.22
+  mood: "cosmic ambient, wonder, Hans Zimmer inspired — no lyrics, no drops"
+  energy: "low at hook, builds through mechanism, peaks at payoff, fades under CTA"
+  tags: ["cosmic", "ambient", "wonder", "cinematic", "space", "documentary"]
+  duck_volume_speech: 0.08
+  duck_volume_gap: 0.20
 thumbnail:
-  style: "space/nature visual, bold white text, blue accent"
+  style: "dramatic space/nature visual — bold white text, cyan accent, high contrast"
   accent_color: "#22D1EE"
   max_words: 4
+  formula: "[SHOCKING CLAIM] or [NUMBER] + [NOUN] — short enough to read in 1 second"
 discovery:
   reddit:
-    subreddits: ["science", "space", "EverythingScience", "Futurology"]
+    subreddits:
+      [
+        "science",
+        "space",
+        "EverythingScience",
+        "Futurology",
+        "todayilearned",
+        "askscience",
+        "biology",
+        "Physics",
+      ]
+  topics:
+    - "psychology facts"
+    - "space discoveries"
+    - "animal behavior anomalies"
+    - "physics paradoxes"
+    - "neuroscience"
+    - "evolutionary biology"
+    - "geology and earth science"
+    - "chemistry breakthroughs"

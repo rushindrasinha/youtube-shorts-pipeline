@@ -1,3 +1,6 @@
+# Caliber AI agent state (may contain session data / secrets)
+.caliber/
+
 # API keys and credentials
 config.json
 client_secret*.json

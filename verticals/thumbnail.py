@@ -3,10 +3,10 @@
 import base64
 from pathlib import Path
 
-import requests
 from PIL import Image, ImageDraw, ImageFont
 
-from .config import get_gemini_key
+from .api_client import get_client
+from .config import get_gemini_key, THUMB_TEXT_PADDING_SIDE, THUMB_TEXT_PADDING_BOTTOM
 from .log import log
 from .retry import with_retry
 
@@ -14,7 +14,6 @@ THUMB_WIDTH = 1280
 THUMB_HEIGHT = 720
 
 
-@with_retry(max_retries=3, base_delay=2.0)
 def _generate_thumb_image(prompt: str, output_path: Path, api_key: str):
     """Generate a 16:9 thumbnail via Gemini native image generation."""
     url = (
@@ -25,18 +24,11 @@ def _generate_thumb_image(prompt: str, output_path: Path, api_key: str):
         "contents": [{"parts": [{"text": f"Generate a 16:9 landscape image: {prompt}"}]}],
         "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
     }
-    r = requests.post(
-        url, json=body, timeout=90,
+    data = get_client().post_json(
+        url, body,
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+        timeout=90,
     )
-    if r.status_code != 200:
-        try:
-            detail = r.json().get("error", {}).get("message", r.text[:200])
-        except Exception:
-            detail = r.text[:200]
-        raise RuntimeError(f"Gemini API {r.status_code}: {detail}")
-
-    data = r.json()
     for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
         if "inlineData" in part:
             img_b64 = part["inlineData"]["data"]
@@ -68,7 +60,7 @@ def _overlay_title(image_path: Path, title: str, output_path: Path):
         font = ImageFont.load_default()
 
     # Word wrap the title
-    max_width = THUMB_WIDTH - 80  # 40px padding each side
+    max_width = THUMB_WIDTH - THUMB_TEXT_PADDING_SIDE * 2
     lines = _wrap_text(draw, title, font, max_width)
     text_block = "\n".join(lines)
 
@@ -77,7 +69,7 @@ def _overlay_title(image_path: Path, title: str, output_path: Path):
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
     x = (THUMB_WIDTH - text_w) // 2
-    y = THUMB_HEIGHT - text_h - 60  # 60px from bottom
+    y = THUMB_HEIGHT - text_h - THUMB_TEXT_PADDING_BOTTOM
 
     # Drop shadow
     shadow_offset = 3

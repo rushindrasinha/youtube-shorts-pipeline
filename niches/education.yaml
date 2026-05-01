@@ -1,45 +1,120 @@
 name: education
 display_name: "Education"
-description: "Profile for education content."
+description: "Bite-sized explainers on history, psychology, economics, philosophy, and how the world works."
 script:
-  tone: "engaging, clear, conversational"
-  pacing: "moderate"
-  word_count: "150 to 175"
+  tone: "clear, conversational, slightly conspiratorial — like a smart friend who just learned something wild"
+  pacing: "145-155 words per minute. Sentences: 8-12 words. Never exceed 16. Punchy and direct."
+  perspective: "the viewer's curious guide — you're revealing things most people don't know, not lecturing"
+  word_count: "140 to 160"
   hooks:
-    - id: breaking
-      template: "This just happened in the world of education."
-      when: "recent event"
+    - id: wrong_callout
+      template: "Everything you learned about {topic} is wrong."
+      when: "common misconception to debunk"
+    - id: mystery_open
+      template: "Nobody can explain why {phenomenon} happens. But here's what we know."
+      when: "unsolved or counterintuitive topic"
+    - id: shocking_stat
+      template: "{statistic} — and it changes everything we thought we knew about {topic}."
+      when: "topic has a surprising data point"
+    - id: stakes
+      template: "What happens in the next 60 seconds will change how you see {topic} forever."
+      when: "topic has a surprising reveal or paradigm shift"
     - id: explainer
-      template: "Let me break down {topic} in 60 seconds."
-      when: "complex topic"
+      template: "Here's {topic} explained in 60 seconds — no textbook needed."
+      when: "dense or intimidating concept can be simplified"
+  structure:
+    opening: |
+      HOOK (0-3s, under 10 words). Stop the scroll.
+      Make a claim, pose a mystery, or challenge a belief.
+    context: |
+      CONTEXT (3-10s). One sentence: why this matters to the viewer's life.
+      Make it feel relevant, not academic.
+    mechanism: |
+      MECHANISM (10-40s). The explanation. Maximum two concepts.
+      One analogy. Short sentences. Plain English only — define any term you use.
+      Pattern interrupt at the 20s mark (surprising sub-fact or pivot).
+    payoff: |
+      PAYOFF (40-50s). The reframe. How does knowing this change how they see the world?
+      Emotional peak. Make it land.
+    closing: |
+      LOOP + CTA (50-60s). Final sentence echoes the hook (retention loop).
+      One CTA only. Never stack CTAs.
   cta_variants:
-    - "Follow for more."
-    - "What do you think? Comment below."
+    - "Follow for one mind-expanding fact every day."
+    - "Subscribe — something new every day."
+    - "What topic should I cover next? Drop it below."
+    - "Follow if school never taught you this."
   forbidden_phrases:
+    - "In this video"
+    - "Did you know"
     - "like and subscribe"
     - "smash that bell"
-  structure:
-    opening: "Hook in first 3 seconds."
-    middle: "3 key points."
-    closing: "Takeaway and CTA."
+    - "as we all know"
+    - "it's important to note"
+    - "fascinating"
 visuals:
-  style: "cinematic, professional"
-  prompt_suffix: "photorealistic, cinematic lighting, high quality"
+  style: "cinematic, dramatic, historical or conceptual — no stock photo classroom vibes"
+  mood: "intriguing, slightly mysterious, then revelatory"
+  color_palette: ["#1A1A2E", "#16213E", "#0F3460", "#E94560", "#FFFFFF"]
+  subjects:
+    prefer:
+      - "dramatic historical settings with cinematic lighting"
+      - "abstract conceptual visualization (economics, psychology, philosophy)"
+      - "maps, diagrams, or timelines rendered cinematically"
+      - "extreme close-up of relevant object or symbol"
+      - "dramatic portrait-style shot of relevant person or archetype"
+    avoid:
+      - "stock photo classroom or teacher at chalkboard"
+      - "generic blue gradient backgrounds"
+      - "clipart or flat illustrations"
+      - "smiling stock people"
+  prompt_suffix: "cinematic lighting, dramatic atmosphere, editorial photography style, 9:16 portrait, photorealistic, high contrast"
 voice:
+  pace: "145-155 words per minute — crisp and engaging, with deliberate pauses for emphasis"
+  energy: "curious and slightly conspiratorial — builds to a satisfying reveal"
+  pauses: "0.3s after hook. 0.5s before payoff. 0.3s after any surprising stat or claim."
   suggested_voices:
     edge_tts:
-      en: "en-US-GuyNeural"
+      en: "en-US-AndrewMultilingualNeural"
+      en_alt: "en-US-RogerNeural"
+      en_female: "en-US-EmmaMultilingualNeural"
+    kokoro:
+      en: "am_adam"
+      en_female: "bf_emma"
 captions:
-  highlight_color: "#FFFF00"
-  words_per_group: 4
+  highlight_color: "#E94560"
+  words_per_group: 3
+  font: "bold, clean sans-serif"
 music:
-  mood: "ambient, subtle"
-  energy: "medium"
-  duck_volume_speech: 0.12
-  duck_volume_gap: 0.25
+  mood: "subtle tension, building curiosity — cinematic underscore, no lyrics"
+  energy: "low at hook, builds through mechanism, peaks at payoff, fades under CTA"
+  tags: ["ambient", "cinematic", "tension", "documentary", "underscore"]
+  duck_volume_speech: 0.09
+  duck_volume_gap: 0.22
 thumbnail:
-  style: "bold text, high contrast"
+  style: "dramatic visual with bold text — high contrast, red/white accent"
+  accent_color: "#E94560"
   max_words: 5
+  formula: "[CLAIM] or [QUESTION] — provocative enough to demand a click"
 discovery:
   reddit:
-    subreddits: ["education"]
+    subreddits:
+      [
+        "todayilearned",
+        "history",
+        "psychology",
+        "philosophy",
+        "explainlikeimfive",
+        "AskHistorians",
+        "economics",
+        "neuroscience",
+      ]
+  topics:
+    - "history facts most people don't know"
+    - "psychology principles explained simply"
+    - "economics concepts demystified"
+    - "philosophy for everyday life"
+    - "cognitive biases and how they affect decisions"
+    - "counterintuitive historical events"
+    - "how systems work (legal, financial, social)"
+    - "debunked myths and misconceptions"

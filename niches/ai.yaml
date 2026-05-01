@@ -1,0 +1,59 @@
+name: ai
+display_name: "AI & Machine Learning (v2.0)"
+description: "AI breakthroughs, AI failures, machine learning insights, future concerns."
+
+llm:
+  model: qwen3:8b
+  provider: ollama
+  temperature: 0.85
+
+voice:
+  engine: kokoro
+  speaker: af_heart
+  speed: 1.0
+
+quality_gates:
+  min_upvotes: 600
+  min_comments: 40
+  hook_score_threshold: 0.87
+
+visuals:
+  fallback: pexels
+  premium_threshold: 0.91
+
+script:
+  tone: "informative, slightly futuristic, balanced optimism and skepticism, compelling"
+  pacing: "moderate with dramatic pauses for big reveals, builds tension"
+  word_count: "160 to 185"
+
+  hooks:
+    - id: ai_breakthrough
+      template: "AI just {achievement}. And it's {implication}."
+      when: "AI capability breakthrough or new milestone"
+    - id: ai_failure
+      template: "This AI company's {product} just {disaster}."
+      when: "AI failure, limitation, or ethical issue"
+    - id: job_impact
+      template: "{profession} are about to {change}. Here's why."
+      when: "AI threatening or changing job categories"
+    - id: ethical_question
+      template: "If AI can {capability}, what happens to {concern}?"
+      when: "ethical or societal implications"
+    - id: technical_marvel
+      template: "This AI technique is {adjective}. Scientists finally figured out {insight}."
+      when: "technical innovation or research breakthrough"
+
+  cta_variants:
+    - "Are you worried about AI? Let's discuss in the comments."
+    - "What AI breakthrough surprised you most?"
+    - "Subscribe for cutting-edge AI news."
+    - "Where do you think AI is headed?"
+
+discovery:
+  pexels:
+    search_query: "artificial intelligence neural network robot machine learning"
+    min_limit: 3
+  reddit:
+    subreddits:
+      ["MachineLearning", "artificial", "ArtificialIntelligence", "ChatGPT"]
+    min_score: 400

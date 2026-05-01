@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Draft JSON state machine for pipeline resume capability."""
 
 import json

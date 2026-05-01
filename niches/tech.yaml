@@ -1,163 +1,55 @@
 name: tech
-display_name: "Tech & AI News"
-description: "For channels covering technology, AI, startups, and product launches."
+display_name: "Tech & Software (v2.0)"
+description: "Developer war stories, debugging nightmares, tech culture. Optimized for M1 Pro."
 
-# ─────────────────────────────────────────────────────
-# Script Intelligence
-# ─────────────────────────────────────────────────────
+llm:
+  model: qwen3:8b
+  provider: ollama
+  temperature: 0.85
+
+voice:
+  engine: kokoro
+  speaker: am_echo
+  speed: 1.0
+
+quality_gates:
+  min_upvotes: 500
+  min_comments: 30
+  hook_score_threshold: 0.85
+
+visuals:
+  fallback: pexels
+  premium_threshold: 0.90
+
 script:
-  tone: "informed, slightly opinionated, conversational but never condescending"
-  pacing: "fast and dense with facts, no filler words, no throat clearing"
-  perspective: "first person, talking directly to viewer as a peer"
-  word_count: "150 to 170"
-  sentence_style: "short punchy sentences, occasional longer one for rhythm, never more than two clauses"
+  tone: "casual, technical but accessible, self-deprecating humor, insider culture"
+  pacing: "fast with technical beats, occasional pauses for punchlines"
+  word_count: "150 to 180"
 
   hooks:
-    - id: contrarian_take
-      template: "Everyone is celebrating {topic}. Here's why that's actually a problem."
-      when: "topic has strong positive consensus, use to create tension"
-    - id: breaking_news
-      template: "This just happened and nobody is talking about it."
-      when: "very recent event, first 24 hours"
-    - id: prediction
-      template: "{topic} changes everything. Here's what happens next."
-      when: "major announcement or product launch with downstream implications"
-    - id: explainer
-      template: "Let me explain {topic} in 60 seconds because most people are getting this wrong."
-      when: "complex topic with widespread misunderstanding"
-    - id: comparison
-      template: "{thing_a} vs {thing_b}. One of these wins and it's not close."
-      when: "two competing products, companies, or approaches"
-    - id: statistic_shock
-      template: "{shocking_stat}. That number should scare you. Here's why."
-      when: "topic has a surprising data point"
-    - id: question
-      template: "Why did {company} just {action}? The answer is wilder than you think."
-      when: "corporate decision that seems irrational on the surface"
-    - id: countdown
-      template: "You have {timeframe} before {consequence}. Here's what you need to know."
-      when: "deadline driven topic, regulation, deprecation, market shift"
+    - id: debugging_horror
+      template: "I spent {time} debugging this issue. The solution was {adjective}."
+      when: "debugging story with unexpected root cause"
+    - id: code_review_shock
+      template: "My code review feedback made the junior dev {action}."
+      when: "code review gone wrong"
+    - id: deployment_disaster
+      template: "We shipped this to production. Here's what happened."
+      when: "production incident"
+    - id: tech_culture
+      template: "Every {job_role} will understand this {situation}."
+      when: "relatable tech culture moment"
 
   cta_variants:
-    - "Follow for daily tech breakdowns."
-    - "Subscribe if you want AI news that actually matters."
-    - "Drop a comment: do you agree with this take?"
-    - "More context in the pinned comment."
+    - "Drop your debugging horror stories in the comments."
+    - "What's your worst code review experience?"
+    - "Subscribe for more tech culture content."
 
-  forbidden_phrases:
-    - "like and subscribe"
-    - "smash that bell"
-    - "what's up guys"
-    - "without further ado"
-    - "in this video"
-    - "hey everyone"
-    - "let me know in the comments"
-
-  structure:
-    opening: "Hook in first 3 seconds. No intro, no greeting, straight into the tension."
-    middle: "3 to 4 key facts from research, each building on the last. Use 'here's the thing' or 'but it gets worse' as transition phrases."
-    closing: "Strong opinion or prediction. Then CTA. Never end on a question without answering it first."
-
-# ─────────────────────────────────────────────────────
-# Visual Intelligence
-# ─────────────────────────────────────────────────────
-visuals:
-  style: "clean, minimal, dark backgrounds with neon or electric blue accents"
-  mood: "futuristic, sleek, professional, slightly ominous for negative stories"
-  color_palette: ["#0A0A0F", "#1A1A2E", "#00FF88", "#4ECDC4", "#FF6B6B"]
-
-  subjects:
-    prefer:
-      - "close up of code on a dark screen with syntax highlighting"
-      - "server room with blue LED lighting"
-      - "minimalist product shot on dark background"
-      - "abstract data visualization with glowing nodes"
-      - "circuit board macro shot with shallow depth of field"
-      - "person silhouette against massive screen display"
-      - "holographic UI overlay on dark background"
-    avoid:
-      - "stock photo of person smiling at laptop"
-      - "generic office environment"
-      - "clipart or illustrated icons"
-      - "bright cheerful colors"
-      - "people shaking hands"
-
-  prompt_suffix: "photorealistic, cinematic lighting, dark moody atmosphere, 8K detail, shallow depth of field"
-
-# ─────────────────────────────────────────────────────
-# Voice Intelligence
-# ─────────────────────────────────────────────────────
-voice:
-  pace: "slightly fast, approximately 160 words per minute"
-  energy: "confident and authoritative but never robotic or monotone"
-  style: "think MKBHD meets a Reuters news anchor"
-
-  suggested_voices:
-    edge_tts:
-      en: "en-US-GuyNeural"
-      hi: "hi-IN-MadhurNeural"
-    elevenlabs:
-      voice_id: "JBFqnCBsd6RMkjVDRZzb"
-      settings:
-        stability: 0.4
-        similarity_boost: 0.85
-        style: 0.3
-
-# ─────────────────────────────────────────────────────
-# Caption Intelligence
-# ─────────────────────────────────────────────────────
-captions:
-  highlight_color: "#00FF88"
-  text_color: "#FFFFFF"
-  font_family: "Arial"
-  font_size: 72
-  font_weight: "bold"
-  position: "lower_third"
-  background: "semi_transparent_dark"
-  words_per_group: 4
-
-# ─────────────────────────────────────────────────────
-# Music Intelligence
-# ─────────────────────────────────────────────────────
-music:
-  mood: "ambient electronic, subtle energy, no lyrics, no distracting melodies"
-  energy: "medium"
-  tags: ["ambient", "electronic", "tech", "cinematic", "dark"]
-  duck_volume_speech: 0.10
-  duck_volume_gap: 0.22
-
-# ─────────────────────────────────────────────────────
-# Thumbnail Intelligence
-# ─────────────────────────────────────────────────────
-thumbnail:
-  style: "dark background, bold text, high contrast, one dominant visual element"
-  text_color: "#FFFFFF"
-  accent_color: "#00FF88"
-  text_position: "left_aligned"
-  max_words: 5
-  font_style: "bold condensed sans serif"
-  guidelines:
-    - "Never put more than 5 words on a thumbnail"
-    - "Text should be readable at 120px wide (mobile browse size)"
-    - "One face or one object, never both competing"
-    - "Dark backgrounds with bright text outperform light backgrounds in tech niche"
-
-# ─────────────────────────────────────────────────────
-# Topic Discovery
-# ─────────────────────────────────────────────────────
 discovery:
+  pexels:
+    search_query: "computer code laptop developer typing workspace"
+    min_limit: 3
   reddit:
-    subreddits: ["technology", "artificial", "MachineLearning", "singularity", "programming", "startups"]
-  rss:
-    feeds:
-      - "https://hnrss.org/frontpage"
-      - "https://techcrunch.com/feed"
-      - "https://www.theverge.com/rss/index.xml"
-  google_trends:
-    category: "t"
-    geo: ""
-  youtube_trending:
-    category_id: "28"
-  hacker_news:
-    enabled: true
-    min_score: 100
+    subreddits:
+      ["cscareerquestions", "learnprogramming", "webdev", "ProgrammingHumor"]
+    min_score: 300

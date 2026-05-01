@@ -72,7 +72,8 @@ thumbnail:
   max_words: 4
 discovery:
   reddit:
-    subreddits: ["personalfinance", "investing", "stocks", "economics", "wallstreetbets"]
+    subreddits:
+      ["personalfinance", "investing", "stocks", "economics", "wallstreetbets"]
   rss:
     feeds:
       - "https://feeds.bloomberg.com/markets/news.rss"

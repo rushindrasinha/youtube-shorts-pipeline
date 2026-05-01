@@ -1,0 +1,102 @@
+{
+  "name": "🎬 Reddit Stories → YouTube Shorts v2.0 (Qwen3 + Kokoro + Hybrid Routing)",
+  "description": "M1 Pro optimized: Qwen3:8b LLM, Kokoro TTS narrator, smart quality gating, Pexels/ComfyUI routing",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": [
+          {
+            "mode": "everyNMinutes",
+            "value": 60
+          }
+        ]
+      },
+      "id": "⏰ Trigger (Every 60 min)",
+      "name": "⏰ Trigger (Every 60 min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [50, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create 3 parallel video generation jobs (M1 Pro can handle)\nconst jobs = [];\nfor (let i = 0; i < 3; i++) {\n  jobs.push({\n    jobId: `${Date.now()}_${i}`,\n    priority: i === 0 ? 'high' : 'normal'\n  });\n}\nreturn jobs;"
+      },
+      "id": "📋 Create 3 Parallel Jobs",
+      "name": "📋 Create 3 Parallel Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "loopOver": "=\\$json"
+      },
+      "id": "🔄 Parallel Batch Processor",
+      "name": "🔄 Parallel Batch Processor",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:11434/api/generate",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"model\": \"qwen3:8b\",\n  \"prompt\": \"Generate a viral YouTube Shorts hook for Reddit stories. Return ONLY the hook sentence, nothing else. Make it shocking, question-based, or contrarian with high emotional impact. Example: \\\"This guy got revenge in a way nobody expected.\\\" Hook: \",\n  \"stream\": false,\n  \"temperature\": 0.85\n}",
+        "options": {}
+      },
+      "id": "🧠 Qwen3:8b Hook Generation",
+      "name": "🧠 Qwen3:8b Hook Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse hook response and score quality\nconst response = $json.body;\nif (!response || !response.response) {\n  return { error: 'Hook generation failed', hookScore: 0 };\n}\nconst hook = response.response.trim();\n// Score: length, emotionality markers, question/shock marks\nlet score = 0.5;\nif (hook.length > 20 && hook.length < 120) score += 0.2;\nif (hook.includes('?') || hook.includes('!')) score += 0.2;\nif (hook.match(/(shocked|wilder|nobody|unexpected)/i)) score += 0.1;\nreturn {\n  hook: hook,\n  hookScore: Math.min(score, 1.0)\n};"
+      },
+      "id": "📊 Score Hook Quality",
+      "name": "📊 Score Hook Quality",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /project && python -m verticals topics --niche reddit_stories --limit 1 --min-upvotes 800 --min-comments 40",
+        "workingDirectory": "/project"
+      },
+      "id": "🔍 Discover Reddit Story (Quality Gated)",
+      "name": "🔍 Discover Reddit Story (Quality Gated)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract topic from Verticals output\nconst output = $json.stdout || \"\";\nconst lines = output.split('\\n');\nconst topicLine = lines.find(l => l.match(/^\\s+\\d+\\./));\nif (!topicLine) {\n  return { error: 'No topics found', topic: null };\n}\nconst topic = topicLine.replace(/^\\s+\\d+\\.\\s+\\[.*?\\]\\s+/, '').trim();\nreturn { topic: topic, found: true };"
+      },
+      "id": "📖 Parse Topic",
+      "name": "📖 Parse Topic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {\n              \"comparator\": \"greaterThan\",\n              \"value1\": \"{{ $json.hookScore }}\",\n              \"value2\": 0.88\n            }\n          ]\n        }\n      },
+      "id": "✅ Hook Quality Gate (0.88+)?",
+      "name": "✅ Hook Quality Gate (0.88+)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        \"conditions\": {\n          \"number\": [\n            {\n              \"comparator\": \"greaterThan\",\n              \"value1\": \"{{ $json.hookScore }}\",\n              \"value2\": 0.92\n            }\n          ]\n        }\n      },\n      \"id\": \"🎯 Premium Quality (0.92+)? → ComfyUI\",\n      \"name\": \"🎯 Premium Quality (0.92+)? → ComfyUI\",\n      \"type\": \"n8n-nodes-base.if\",\n      \"typeVersion\": 1,\n      \"position\": [1650, 200]\n    },\n    {\n      \"parameters\": {\n        \"command\": \"cd /project && python -m verticals run --news '{{ $json.topic }}' --niche reddit_stories --provider ollama --voice kokoro --visuals pexels --lang en --headless --platform youtube\",\n        \"workingDirectory\": \"/project\"\n      },\n      \"id\": \"⚡ Fast Path (Pexels + Kokoro)\",\n      \"name\": \"⚡ Fast Path (Pexels + Kokoro)\",\n      \"type\": \"n8n-nodes-base.executeCommand\",\n      \"typeVersion\": 1,\n      \"position\": [1650, 350],\n      \"continueOnFail\": true\n    },\n    {\n      \"parameters\": {\n        \"command\": \"cd /project && python -m verticals run --news '{{ $json.topic }}' --niche reddit_stories --provider ollama --voice kokoro --visuals comfyui --visuals-model wan-2.2-5b --lang en --headless --platform youtube\",\n        \"workingDirectory\": \"/project\"\n      },\n      \"id\": \"🎬 Premium Path (ComfyUI + Kokoro)\",\n      \"name\": \"🎬 Premium Path (ComfyUI + Kokoro)\",\n      \"type\": \"n8n-nodes-base.executeCommand\",\n      \"typeVersion\": 1,\n      \"position\": [1850, 150],\n      \"continueOnFail\": true\n    },\n    {\n      \"parameters\": {\n        \"conditions\": {\n          \"number\": [\n            {\n              \"comparator\": \"equal\",\n              \"value1\": \"{{ $json.exitCode }}\",\n              \"value2\": 0\n            }\n          ]\n        }\n      },\n      \"id\": \"✅ Video Success?\",\n      \"name\": \"✅ Video Success?\",\n      \"type\": \"n8n-nodes-base.if\",\n      \"typeVersion\": 1,\n      \"position\": [2050, 250]\n    },\n    {\n      \"parameters\": {\n        \"text\": \"🎉 VIDEO GENERATED (v2.0)!\\n\\nTopic: {{ $json.topic }}\\nHook Score: {{ $json.hookScore }}\\nPath: {{ $json.exitCode === 0 ? '✅ Success' : '❌ Failed' }}\\nTime: {{ now() }}\"\n      },\n      \"id\": \"📨 Success Alert\",\n      \"name\": \"📨 Success Alert\",\n      \"type\": \"n8n-nodes-base.notificationUI\",\n      \"typeVersion\": 1,\n      \"position\": [2250, 150]\n    },\n    {\n      \"parameters\": {\n        \"text\": \"⚠️ Video Failed (v2.0)\\n\\nTopic: {{ $json.topic }}\\nHook Score: {{ $json.hookScore }}\\nError: {{ $json.stderr }}\\nCheck logs: docker compose logs n8n\"\n      },\n      \"id\": \"⚠️ Error Alert\",\n      \"name\": \"⚠️ Error Alert\",\n      \"type\": \"n8n-nodes-base.notificationUI\",\n      \"typeVersion\": 1,\n      \"position\": [2250, 350]\n    },\n    {\n      \"parameters\": {\n        \"text\": \"⏭️ Skipped (Low Hook Quality)\\n\\nHook Score: {{ $json.hookScore }} (threshold: 0.88)\\nWill retry in 60 minutes\"\n      },\n      \"id\": \"⏭️ Quality Gate Failed Alert\",\n      \"name\": \"⏭️ Quality Gate Failed Alert\",\n      \"type\": \"n8n-nodes-base.notificationUI\",\n      \"typeVersion\": 1,\n      \"position\": [1650, 500]\n    }\n  ],\n  \"connections\": {\n    \"⏰ Trigger (Every 60 min)\": {\n      \"main\": [[{\"node\": \"📋 Create 3 Parallel Jobs\", \"index\": 0}]]\n    },\n    \"📋 Create 3 Parallel Jobs\": {\n      \"main\": [[{\"node\": \"🔄 Parallel Batch Processor\", \"index\": 0}]]\n    },\n    \"🔄 Parallel Batch Processor\": {\n      \"main\": [[{\"node\": \"🧠 Qwen3:8b Hook Generation\", \"index\": 0}]]\n    },\n    \"🧠 Qwen3:8b Hook Generation\": {\n      \"main\": [[{\"node\": \"📊 Score Hook Quality\", \"index\": 0}]]\n    },\n    \"📊 Score Hook Quality\": {\n      \"main\": [[{\"node\": \"🔍 Discover Reddit Story (Quality Gated)\", \"index\": 0}]]\n    },\n    \"🔍 Discover Reddit Story (Quality Gated)\": {\n      \"main\": [[{\"node\": \"📖 Parse Topic\", \"index\": 0}]]\n    },\n    \"📖 Parse Topic\": {\n      \"main\": [[{\"node\": \"✅ Hook Quality Gate (0.88+)?\", \"index\": 0}]]\n    },\n    \"✅ Hook Quality Gate (0.88+)?\": {\n      \"main\": [[{\"node\": \"🎯 Premium Quality (0.92+)? → ComfyUI\", \"index\": 0}], [{\"node\": \"⏭️ Quality Gate Failed Alert\", \"index\": 0}]]\n    },\n    \"🎯 Premium Quality (0.92+)? → ComfyUI\": {\n      \"main\": [[{\"node\": \"🎬 Premium Path (ComfyUI + Kokoro)\", \"index\": 0}], [{\"node\": \"⚡ Fast Path (Pexels + Kokoro)\", \"index\": 0}]]\n    },\n    \"⚡ Fast Path (Pexels + Kokoro)\": {\n      \"main\": [[{\"node\": \"✅ Video Success?\", \"index\": 0}]]\n    },\n    \"🎬 Premium Path (ComfyUI + Kokoro)\": {\n      \"main\": [[{\"node\": \"✅ Video Success?\", \"index\": 0}]]\n    },\n    \"✅ Video Success?\": {\n      \"main\": [[{\"node\": \"📨 Success Alert\", \"index\": 0}], [{\"node\": \"⚠️ Error Alert\", \"index\": 0}]]\n    }\n  },\n  \"active\": true,\n  \"settings\": {\n    \"errorWorkflow\": \"\",\n    \"saveDataErrorExecution\": \"all\",\n    \"saveDataSuccessExecution\": \"all\"\n  },\n  \"tags\": [\"youtube\", \"shorts\", \"reddit\", \"free\", \"async\", \"qwen3\", \"kokoro\", \"v2.0\"],\n  \"updated\": \"2026-04-06T14:00:00Z\",\n  \"versionId\": \"2-production-qwen3-kokoro\"\n}

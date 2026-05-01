@@ -118,7 +118,17 @@ thumbnail:
 
 discovery:
   reddit:
-    subreddits: ["gaming", "Games", "pcgaming", "VALORANT", "leagueoflegends", "apexlegends", "FortNiteBR", "esports"]
+    subreddits:
+      [
+        "gaming",
+        "Games",
+        "pcgaming",
+        "VALORANT",
+        "leagueoflegends",
+        "apexlegends",
+        "FortNiteBR",
+        "esports",
+      ]
   rss:
     feeds:
       - "https://kotaku.com/rss"

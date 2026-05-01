@@ -19,6 +19,7 @@ pip install anthropic \
 ```
 
 **Optional (for Whisper captions):**
+
 ```bash
 pip install openai-whisper
 ```
@@ -28,11 +29,13 @@ pip install openai-whisper
 ## 2. Install System Tools
 
 ### macOS (Homebrew)
+
 ```bash
 brew install ffmpeg
 ```
 
 ### Ubuntu/Debian
+
 ```bash
 apt install ffmpeg
 ```
@@ -44,20 +47,28 @@ Whisper is installed via pip (above). No separate system package needed.
 ## 3. Get Your API Keys
 
 ### Anthropic (Claude) — Required
+
 Used for script generation.
+
 1. Go to https://console.anthropic.com/settings/keys
 2. Create a new API key
 3. Copy the key — you'll enter it in the setup wizard
 
 ### ElevenLabs — Optional
+
 Used for professional voiceover. If omitted, macOS `say` command is used as fallback.
+
 - **Note:** Free tier is blocked on server IPs. Pro plan ($22/mo) required for non-local use.
+
 1. Go to https://elevenlabs.io/settings/api-keys
 2. Create a new key and copy it
+
 - Default voice: George (`JBFqnCBsd6RMkjVDRZzb`) — override via `VOICE_ID_EN` env var
 
 ### Google Gemini — Required
+
 Used for AI b-roll image generation via Imagen 3.
+
 1. Go to https://aistudio.google.com/apikey
 2. Create a new API key and copy it
 
@@ -68,12 +79,14 @@ Used for AI b-roll image generation via Imagen 3.
 This gives the pipeline permission to upload to your YouTube channel. You only need to do this once.
 
 ### Step 1: Google Cloud Console
+
 1. Go to https://console.cloud.google.com
 2. Create a new project (or select an existing one)
 3. Go to **APIs & Services → Library**
 4. Search for "YouTube Data API v3" and **Enable** it
 
 ### Step 2: Create OAuth Credentials
+
 1. Go to **APIs & Services → Credentials**
 2. Click **Create Credentials → OAuth 2.0 Client ID**
 3. Application type: **Desktop app**
@@ -82,11 +95,13 @@ This gives the pipeline permission to upload to your YouTube channel. You only n
 6. Save the file as `client_secret.json` somewhere accessible
 
 ### Step 3: Run the OAuth Flow
+
 ```bash
 python3 scripts/setup_youtube_oauth.py
 ```
 
 This will:
+
 - Ask for the path to your `client_secret.json`
 - Open a browser for Google sign-in
 - Save the OAuth token to `~/.verticals/youtube_token.json`
@@ -98,6 +113,7 @@ Scopes requested: `youtube.upload`, `youtube.force-ssl` (minimum for upload + ca
 ## 5. Run the Pipeline
 
 ### First run — automatic setup wizard
+
 ```bash
 python3 python -m verticals draft --news "your topic here"
 ```

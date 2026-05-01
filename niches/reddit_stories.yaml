@@ -1,0 +1,197 @@
+name: reddit_stories
+display_name: "Reddit Stories (v2.0 Optimized)"
+description: "Story-driven channel: AskReddit, NoSleep, ProRevenge, AITA. Optimized for M1 Pro with Qwen3:8b LLM and Kokoro TTS."
+
+# ─────────────────────────────────────────────────────
+# v2.0 LLM + Voice Configuration
+# ─────────────────────────────────────────────────────
+llm:
+  model: qwen3:8b       # Better narrative flow than generic Llama
+  provider: ollama
+  temperature: 0.85     # Creative but coherent
+
+voice:
+  engine: kokoro        # Premium narrator quality (replaces Edge TTS)
+  speaker: af_heart     # Female: warm, conversational (use am_echo for male)
+  speed: 1.0
+
+# ─────────────────────────────────────────────────────
+# Quality Gating + Hybrid Visual Routing
+# ─────────────────────────────────────────────────────
+quality_gates:
+  min_upvotes: 800            # Story must have good engagement
+  min_comments: 40            # Real discussion = good content
+  hook_score_threshold: 0.88  # LLM-scored hook quality (0-1.0)
+  max_length_chars: 3000      # Prevent overly long stories
+
+visuals:
+  fallback: pexels            # Fast & reliable default
+  premium_threshold: 0.92     # Top 8% of stories → ComfyUI AI video
+  premium_model: wan-2.2-5b-i2v-gguf-q5  # Lightweight for M1 Pro
+
+# ─────────────────────────────────────────────────────
+# Script Intelligence
+# ─────────────────────────────────────────────────────
+script:
+  tone: "conversational, engaging, slightly dramatic but authentic, builds tension naturally"
+  pacing: "moderate with rhythm changes—slow build-up, faster payoff, dramatic pauses for effect"
+  perspective: "narrator voice, third person recounting the story, occasional first person reactions"
+  word_count: "160 to 180"
+  sentence_style: "mix of short snappy lines for impact and longer descriptive sentences to set scene"
+
+  hooks:
+    - id: immediate_shock
+      template: "This person did something so {adjective} that I had to read it twice."
+      when: "story has shocking twist, crime, or unexpected behavior upfront"
+    - id: question_hook
+      template: "What would you do if {scenario}? This guy actually did it."
+      when: "relatable hypothetical scenario that the story addresses"
+    - id: reddit_specific
+      template: "Reddit just told me this story is {superlative}. Here's why."
+      when: "story is trending or has high upvote count"
+    - id: narrative_tease
+      template: "A {profession/role} walks into {situation}. What happens next will make you angry."
+      when: "setting up narrative payoff, building curiosity"
+    - id: moral_dilemma
+      template: "Is this person right or wrong? {setup}. The story is wild."
+      when: "AITA-style posts with moral ambiguity"
+    - id: revenge_setup
+      template: "They messed with the wrong person. Here's how they got revenge."
+      when: "malicious compliance, revenge, or justice story"
+    - id: relatable_wrong
+      template: "Everyone thinks they're the villain. Here's the real story."
+      when: "redemption arc or perspective shift"
+
+  cta_variants:
+    - "More wild Reddit stories tomorrow. Follow for the best."
+    - "Subscribe if you love Reddit drama and plot twists."
+    - "Tell me in the comments: who was wrong here?"
+    - "Drop a like if that ending surprised you."
+    - "More stories like this? Let me know in the comments."
+
+  forbidden_phrases:
+    - "smash that like button"
+    - "hit the subscribe button"
+    - "what's up guys"
+    - "in this video"
+    - "let me know down below"
+    - "don't forget to turn on notifications"
+    - "it's your boy"
+
+  structure:
+    opening: "Hook with the most dramatic or shocking element of the story. No setup, go straight to tension."
+    middle: "Build narrative step-by-step. Use dialogue, details, and pacing shifts to maintain momentum. Paint a vivid picture."
+    closing: "Strong payoff or twist. Deliver the emotional punch. Then CTA. Leave audience wanting more."
+
+# ─────────────────────────────────────────────────────
+# Visual Intelligence
+# ─────────────────────────────────────────────────────
+visuals:
+  style: "cinematic, dramatic, moody storytelling visuals with occasional humor for lighter stories"
+  mood: "atmospheric, tension-building, authentic but cinematic"
+  color_palette: ["#1A1A2E", "#16213E", "#0F3460", "#E94560", "#EAEAEA"]
+
+  subjects:
+    prefer:
+      - "cozy home interiors with dramatic lighting for domestic conflict stories"
+      - "office or workplace scenes with tension-building angles"
+      - "person in conversation or confrontation, faces showing emotion"
+      - "close-up of phone or message for tech-related stories"
+      - "street or outdoor scene depending on story setting"
+      - "abstract emotional visuals: shadows, light through windows, motion"
+      - "everyday objects that become meaningful in the story"
+    avoid:
+      - "Reddit logo or generic internet imagery"
+      - "generic stock photos of happy people"
+      - "cartoons or illustrations"
+      - "low quality or blurry footage"
+      - "people making exaggerated expressions"
+
+  prompt_suffix: "cinematic, moody, authentic storytelling visual, dramatic lighting, emotional depth, 8K quality"
+
+# ─────────────────────────────────────────────────────
+# Voice Intelligence
+# ─────────────────────────────────────────────────────
+voice:
+  pace: "moderate with variation, approximately 140-150 words per minute, allow for dramatic pauses"
+  energy: "engaging and expressive, varies with story tension, warm but not overly friendly"
+  style: "like a good storyteller around a campfire, conversational but compelling, think NPR meets podcast narrator"
+
+  suggested_voices:
+    edge_tts:
+      en: "en-US-AriaNeural"
+      hi: "hi-IN-SwaraNeural"
+    elevenlabs:
+      voice_id: "9BWtsMINqrJLrRacOk9x"
+      settings:
+        stability: 0.5
+        similarity_boost: 0.75
+        style: 0.4
+
+# ─────────────────────────────────────────────────────
+# Caption Intelligence
+# ─────────────────────────────────────────────────────
+captions:
+  highlight_color: "#E94560"
+  text_color: "#FFFFFF"
+  font_family: "Arial"
+  font_size: 68
+  font_weight: "bold"
+  position: "lower_third"
+  background: "semi_transparent_dark"
+  words_per_group: 5
+
+# ─────────────────────────────────────────────────────
+# Music Intelligence
+# ─────────────────────────────────────────────────────
+music:
+  mood: "cinematic, dramatic tension, suspenseful but not scary, indie or orchestral"
+  energy: "medium to high, builds with story"
+  tags: ["cinematic", "dramatic", "suspense", "storytelling", "indie"]
+  duck_volume_speech: 0.15
+  duck_volume_gap: 0.25
+
+# ─────────────────────────────────────────────────────
+# Thumbnail Intelligence
+# ─────────────────────────────────────────────────────
+thumbnail:
+  style: "high contrast, bold text, emotional face or key visual, slightly dramatic colors"
+  text_color: "#FFFFFF"
+  accent_color: "#E94560"
+  text_position: "center_aligned"
+  max_words: 5
+  font_style: "bold sans serif"
+  guidelines:
+    - "Use face with strong emotion (shocked, angry, happy) for higher CTR"
+    - "Text should hint at the emotional payoff: 'You won't believe...', 'This made me..'"
+    - "Red or pink accent color performs well for drama/revenge stories"
+    - "Keep text minimal and scannable at thumbnail size"
+
+# ─────────────────────────────────────────────────────
+# Topic Discovery
+# ─────────────────────────────────────────────────────
+discovery:
+  reddit:
+    subreddits:
+      [
+        "AskReddit",
+        "NoSleep",
+        "ProRevenge",
+        "MaliciousCompliance",
+        "AmItheAsshole",
+        "BestofRedditorUpdates",
+        "Damnthatsinteresting",
+        "Talesfromcallcenters",
+        "JusticeServed",
+      ]
+    story_mode: true
+    min_score: 500
+    min_comments: 50
+  rss:
+    feeds: []
+  google_trends:
+    category: ""
+    geo: ""
+  hacker_news:
+    enabled: false
+    min_score: 0

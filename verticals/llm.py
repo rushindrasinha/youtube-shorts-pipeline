@@ -1,3 +1,4 @@
+from __future__ import annotations
 """Multi-provider LLM abstraction.
 
 Supports: claude (Anthropic), gemini (Google), openai (OpenAI), ollama (local).
@@ -7,6 +8,7 @@ Provider selection: --provider flag or LLM_PROVIDER env var or config.json.
 import json
 import os
 
+from .api_client import get_client
 from .config import (
     get_anthropic_client,
     get_anthropic_key,
@@ -115,8 +117,6 @@ def _call_claude(prompt: str, max_tokens: int) -> str:
 
 def _call_gemini(prompt: str, max_tokens: int) -> str:
     """Call Gemini via Google AI API."""
-    import requests
-
     api_key = get_gemini_key()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set")
@@ -132,14 +132,11 @@ def _call_gemini(prompt: str, max_tokens: int) -> str:
             "temperature": 0.7,
         },
     }
-    r = requests.post(
-        url, json=body, timeout=60,
+    data = get_client().post_json(
+        url, body,
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+        timeout=60,
     )
-    if r.status_code != 200:
-        raise RuntimeError(f"Gemini API {r.status_code}: {r.text[:300]}")
-
-    data = r.json()
     parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
     text = " ".join(p.get("text", "") for p in parts).strip()
     if not text:
@@ -149,20 +146,18 @@ def _call_gemini(prompt: str, max_tokens: int) -> str:
 
 def _call_openai(prompt: str, max_tokens: int) -> str:
     """Call OpenAI GPT via API."""
-    import requests
-
     from .config import load_config
     api_key = os.environ.get("OPENAI_API_KEY") or load_config().get("OPENAI_API_KEY", "")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
 
-    r = requests.post(
+    data = get_client().post_json(
         "https://api.openai.com/v1/chat/completions",
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
-        json={
+        json_body={
             "model": "gpt-4o-mini",
             "max_tokens": max_tokens,
             "temperature": 0.7,
@@ -170,17 +165,13 @@ def _call_openai(prompt: str, max_tokens: int) -> str:
         },
         timeout=60,
     )
-    if r.status_code != 200:
-        raise RuntimeError(f"OpenAI API {r.status_code}: {r.text[:300]}")
-
-    data = r.json()
     return data["choices"][0]["message"]["content"].strip()
 
 
 def _call_ollama(prompt: str) -> str:
     """Call Ollama locally (no API key needed).
 
-    Tries models in preference order: llama3.1:8b, mistral, gemma2.
+    Tries models in preference order: qwen3:8b (fast), qwen2.5:7b, llama3.1:8b, mistral, gemma2.
     """
     import requests
 
@@ -192,10 +183,10 @@ def _call_ollama(prompt: str) -> str:
         raise RuntimeError("Ollama not running. Start with: ollama serve")
 
     if not available:
-        raise RuntimeError("No Ollama models found. Pull one: ollama pull llama3.1:8b")
+        raise RuntimeError("No Ollama models found. Pull one: ollama pull qwen3:8b")
 
     # Pick best available model
-    preferred = ["llama3.1:8b", "llama3:8b", "mistral", "gemma2", "qwen2.5:7b"]
+    preferred = ["qwen3:8b", "qwen2.5:7b", "llama3.1:8b", "llama3:8b", "mistral", "gemma2"]
     model = None
     for pref in preferred:
         for avail in available:

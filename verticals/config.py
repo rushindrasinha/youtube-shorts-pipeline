@@ -23,6 +23,24 @@ VIDEO_WIDTH = 1080
 VIDEO_HEIGHT = 1920
 
 # ─────────────────────────────────────────────────────
+# Music ducking defaults
+# ─────────────────────────────────────────────────────
+MUSIC_DUCK_SPEECH = 0.12
+MUSIC_DUCK_GAP = 0.25
+MUSIC_MERGE_GAP_THRESHOLD = 0.5
+
+# ─────────────────────────────────────────────────────
+# Caption layout defaults
+# ─────────────────────────────────────────────────────
+CAPTION_BOTTOM_MARGIN_RATIO = 0.25
+
+# ─────────────────────────────────────────────────────
+# Thumbnail text layout
+# ─────────────────────────────────────────────────────
+THUMB_TEXT_PADDING_SIDE = 40
+THUMB_TEXT_PADDING_BOTTOM = 60
+
+# ─────────────────────────────────────────────────────
 # Voice config — override via env or config.json
 # ─────────────────────────────────────────────────────
 VOICE_ID_EN = os.environ.get("VOICE_ID_EN", "JBFqnCBsd6RMkjVDRZzb")  # George
@@ -91,6 +109,10 @@ def get_anthropic_key() -> str:
 
 def get_newsapi_key() -> str:
     return _get_key("NEWSAPI_KEY")
+
+
+def get_youtube_api_key() -> str:
+    return _get_key("YOUTUBE_API_KEY")
 
 
 # ─────────────────────────────────────────────────────
