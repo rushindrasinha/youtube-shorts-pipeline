@@ -12,6 +12,7 @@ from .config import (
     get_anthropic_key,
     get_claude_backend,
     get_gemini_key,
+    get_minimax_key,
     call_claude_cli,
 )
 from .log import log
@@ -41,6 +42,8 @@ def get_provider(name: str | None = None) -> str:
         return "claude"
     if get_gemini_key():
         return "gemini"
+    if get_minimax_key():
+        return "minimax"
     if os.environ.get("OPENAI_API_KEY") or cfg.get("OPENAI_API_KEY"):
         return "openai"
     if _ollama_available():
@@ -90,6 +93,8 @@ def call_llm(prompt: str, provider: str | None = None, max_tokens: int = 1500) -
         return call_claude_cli(prompt, max_tokens=max_tokens)
     elif provider == "gemini":
         return _call_gemini(prompt, max_tokens)
+    elif provider == "minimax":
+        return _call_minimax(prompt, max_tokens)
     elif provider == "openai":
         return _call_openai(prompt, max_tokens)
     elif provider == "ollama":
@@ -111,6 +116,36 @@ def _call_claude(prompt: str, max_tokens: int) -> str:
         messages=[{"role": "user", "content": prompt}],
     )
     return msg.content[0].text.strip()
+
+
+def _call_minimax(prompt: str, max_tokens: int) -> str:
+    """Call MiniMax via OpenAI-compatible API."""
+    import requests
+
+    api_key = get_minimax_key()
+    if not api_key:
+        raise RuntimeError("MINIMAX_API_KEY not set")
+
+    base_url = os.environ.get("MINIMAX_BASE_URL", "https://api.minimax.io/v1")
+    r = requests.post(
+        f"{base_url}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "MiniMax-M2.7",
+            "max_tokens": max_tokens,
+            "temperature": 1.0,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=60,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"MiniMax API {r.status_code}: {r.text[:300]}")
+
+    data = r.json()
+    return data["choices"][0]["message"]["content"].strip()
 
 
 def _call_gemini(prompt: str, max_tokens: int) -> str:

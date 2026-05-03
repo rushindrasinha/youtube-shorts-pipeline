@@ -10,7 +10,7 @@ from pathlib import Path
 
 import requests
 
-from .config import VOICE_ID_EN, VOICE_ID_HI, get_elevenlabs_key, run_cmd
+from .config import VOICE_ID_EN, VOICE_ID_HI, get_elevenlabs_key, get_minimax_key, run_cmd
 from .log import log
 from .retry import with_retry
 
@@ -118,6 +118,102 @@ def _generate_elevenlabs(
 
 
 # ─────────────────────────────────────────────────────
+# MiniMax TTS — AI-powered, supports streaming SSE
+# ─────────────────────────────────────────────────────
+
+MINIMAX_TTS_VOICES = [
+    "English_Graceful_Lady",
+    "English_Insightful_Speaker",
+    "English_radiant_girl",
+    "English_Persuasive_Man",
+    "English_Lucky_Robot",
+    "English_expressive_narrator",
+]
+
+
+@with_retry(max_retries=3, base_delay=2.0)
+def _call_minimax_tts(text: str, voice_id: str, api_key: str, model: str = "speech-2.8-hd") -> bytes:
+    """Call MiniMax TTS API (streaming SSE) and return mp3 audio bytes."""
+    base_url = os.environ.get("MINIMAX_BASE_URL", "https://api.minimax.io")
+    base_url = base_url.rstrip("/").removesuffix("/v1")
+
+    r = requests.post(
+        f"{base_url}/v1/t2a_v2",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "text": text,
+            "stream": True,
+            "voice_setting": {
+                "voice_id": voice_id,
+                "speed": 1,
+                "vol": 1,
+                "pitch": 0,
+            },
+            "audio_setting": {
+                "sample_rate": 32000,
+                "bitrate": 128000,
+                "format": "mp3",
+                "channel": 1,
+            },
+        },
+        stream=True,
+        timeout=60,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"MiniMax TTS {r.status_code}: {r.text[:200]}")
+
+    audio_chunks: list[bytes] = []
+    buffer = ""
+    for raw in r.iter_content(chunk_size=None):
+        if not raw:
+            continue
+        buffer += raw.decode("utf-8", errors="replace")
+        lines = buffer.split("\n")
+        buffer = lines.pop()
+        for line in lines:
+            if not line.startswith("data:"):
+                continue
+            json_str = line[5:].strip()
+            if not json_str or json_str == "[DONE]":
+                continue
+            try:
+                import json as _json
+                event_data = _json.loads(json_str)
+                audio_hex = event_data.get("data", {}).get("audio")
+                if audio_hex:
+                    audio_chunks.append(bytes.fromhex(audio_hex))
+            except Exception:
+                pass
+
+    if not audio_chunks:
+        raise RuntimeError("MiniMax TTS returned no audio data")
+    return b"".join(audio_chunks)
+
+
+def _generate_minimax(
+    script: str, out_dir: Path, lang: str,
+    voice_id: str = "", model: str = "speech-2.8-hd",
+) -> Path:
+    """Generate voiceover via MiniMax TTS."""
+    api_key = get_minimax_key()
+    if not api_key:
+        raise RuntimeError("MINIMAX_API_KEY not set")
+
+    vid = voice_id or MINIMAX_TTS_VOICES[0]
+    out_path = out_dir / f"voiceover_{lang}.mp3"
+
+    log(f"Generating {lang} voiceover via MiniMax TTS (voice: {vid})...")
+    audio_bytes = _call_minimax_tts(script, vid, api_key, model)
+    out_path.write_bytes(audio_bytes)
+    log(f"MiniMax TTS voiceover saved: {out_path.name}")
+    return out_path
+
+
+# ─────────────────────────────────────────────────────
 # macOS say — last resort fallback
 # ─────────────────────────────────────────────────────
 
@@ -162,6 +258,9 @@ def get_tts_provider(name: str | None = None) -> str:
     except ImportError:
         pass
 
+    if get_minimax_key():
+        return "minimax"
+
     if get_elevenlabs_key():
         return "elevenlabs"
 
@@ -173,6 +272,7 @@ def get_tts_provider(name: str | None = None) -> str:
     raise RuntimeError(
         "No TTS provider available. Install one:\n"
         "  pip install edge-tts  (free, recommended)\n"
+        "  Set MINIMAX_API_KEY (AI-powered)\n"
         "  Set ELEVENLABS_API_KEY (premium)\n"
         "  Or use macOS (has built-in 'say')"
     )
@@ -207,6 +307,25 @@ def generate_voiceover(
         except Exception as e:
             log(f"Edge TTS failed: {e}")
             # Fall through to next provider
+            if get_minimax_key():
+                log("Falling back to MiniMax TTS...")
+                provider = "minimax"
+            elif get_elevenlabs_key():
+                log("Falling back to ElevenLabs...")
+                provider = "elevenlabs"
+            else:
+                log("Falling back to macOS say...")
+                return _generate_say(script, out_dir)
+
+    if provider == "minimax":
+        try:
+            return _generate_minimax(
+                script, out_dir, lang,
+                voice_id=voice_config.get("voice_id", ""),
+                model=voice_config.get("model", "speech-2.8-hd"),
+            )
+        except Exception as e:
+            log(f"MiniMax TTS failed: {e}")
             if get_elevenlabs_key():
                 log("Falling back to ElevenLabs...")
                 provider = "elevenlabs"

@@ -206,6 +206,10 @@ def get_elevenlabs_key() -> str:
     return _get_key("ELEVENLABS_API_KEY")
 
 
+def get_minimax_key() -> str:
+    return _get_key("MINIMAX_API_KEY")
+
+
 def get_gemini_key() -> str:
     return _get_key("GEMINI_API_KEY")
 
