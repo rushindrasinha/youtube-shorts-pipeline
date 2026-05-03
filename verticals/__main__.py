@@ -113,6 +113,8 @@ def cmd_produce(args):
             vo_path, work_dir, lang,
             highlight_color=caption_config.get("highlight_color", "#FFFF00"),
             words_per_group=caption_config.get("words_per_group", 4),
+            font_family=caption_config.get("font_family", "Arial"),
+            font_size=int(caption_config.get("font_size", 72)),
         )
         state.complete_stage("captions", {
             "srt_path": str(captions_result.get("srt_path", "")),
