@@ -1,6 +1,7 @@
 """Multi-provider LLM abstraction.
 
-Supports: claude (Anthropic), gemini (Google), openai (OpenAI), ollama (local).
+Supports: claude (Anthropic), gemini (Google), openai (OpenAI), ollama (local),
+litellm (100+ providers via unified SDK).
 Provider selection: --provider flag or LLM_PROVIDER env var or config.json.
 """
 
@@ -94,6 +95,8 @@ def call_llm(prompt: str, provider: str | None = None, max_tokens: int = 1500) -
         return _call_openai(prompt, max_tokens)
     elif provider == "ollama":
         return _call_ollama(prompt)
+    elif provider == "litellm":
+        return _call_litellm(prompt, max_tokens)
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")
 
@@ -218,3 +221,31 @@ def _call_ollama(prompt: str) -> str:
         raise RuntimeError(f"Ollama {r.status_code}: {r.text[:300]}")
 
     return r.json().get("response", "").strip()
+
+
+def _call_litellm(prompt: str, max_tokens: int) -> str:
+    """Call any LLM provider via the litellm SDK.
+
+    Set LITELLM_MODEL to specify the model (e.g. anthropic/claude-sonnet-4-20250514,
+    azure/gpt-4o, bedrock/anthropic.claude-3-haiku, openai/gpt-4o).
+    LiteLLM reads provider API keys from env vars automatically.
+
+    See https://docs.litellm.ai/docs/providers for all supported models.
+    """
+    import litellm
+
+    model = os.environ.get("LITELLM_MODEL", "openai/gpt-4o")
+    log(f"Using LiteLLM model: {model}")
+
+    response = litellm.completion(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        temperature=0.7,
+        drop_params=True,
+    )
+
+    content = response.choices[0].message.content
+    if not content:
+        raise RuntimeError("Empty response from LiteLLM")
+    return content.strip()
