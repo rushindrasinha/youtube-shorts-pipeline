@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.0.1] - 2026-05-21
+
+Credibility and viral-traffic cleanup.
+
+### Added
+- Added a physical MIT `LICENSE` file so GitHub detects the repository license.
+- Added README sections for quality limits and the distribution loop around the production pipeline.
+- Added a README v3.0.1 release note that separates shipped features from roadmap items.
+
+### Changed
+- `--topic` is now accepted as the public CLI flag, with `--news` retained as a backwards-compatible alias.
+- Help and non-generative commands no longer trigger the first-run setup wizard before showing useful output.
+- README examples now match the current CLI and implemented provider surface.
+- Removed or demoted README claims for unshipped Gradio, Docker, Colab, TikTok/Reels/X upload, Pexels, Replicate, ComfyUI, and Kokoro TTS support.
+
+### Fixed
+- Fixed ASS caption highlight colors by writing BGR byte order correctly.
+- Fixed `--help` and `--niches` so they can run before API keys are configured.
+
 ## [3.0.0] — 2026-04-02
 
 **Verticals: from esports news tool to general purpose AI content engine.**
@@ -10,7 +29,7 @@ This is a ground up rethink of the pipeline. The core flow (research → script 
 - **Renamed from `youtube-shorts-pipeline` to `verticals`.** Module import is now `verticals` instead of `pipeline`.
 - **Config directory moved** from `~/.youtube-shorts-pipeline/` to `~/.verticals/`.
 - **Draft JSON schema changed.** v2 drafts are not directly compatible. A migration script is included: `python -m verticals migrate --drafts-dir <path>`.
-- **CLI commands restructured.** `--news` is now `--topic`. New `--niche`, `--provider`, `--voice`, `--visuals`, `--platform` flags added.
+- **CLI commands restructured.** `--topic` is the public topic flag, with `--news` kept as a backwards-compatible alias. New `--niche`, `--provider`, `--voice`, and `--platform` flags added.
 
 ### Added: Niche Intelligence
 - **15 built in niche profiles** (tech, gaming, finance, fitness, cooking, travel, true_crime, science, politics, entertainment, sports, fashion, education, motivation, comedy) plus a `general` fallback.
@@ -20,14 +39,9 @@ This is a ground up rethink of the pipeline. The core flow (research → script 
 
 ### Added: Multi Provider Support
 - **LLM providers:** Claude (Anthropic), Gemini (Google), GPT (OpenAI), Ollama (local). Select with `--provider`.
-- **TTS providers:** Edge TTS (free, **new default**), ElevenLabs (premium), Kokoro (local, open source), macOS say (fallback). Select with `--voice`.
-- **Image providers:** Gemini Imagen (default), Replicate (Flux, SDXL), Pexels (free stock footage), ComfyUI (local GPU). Select with `--visuals`.
-- **$0.00 mode:** Ollama + Edge TTS + Pexels = fully functional pipeline with zero API costs.
-
-### Added: Web UI and Colab
-- **Gradio web interface** via `python -m verticals ui`. Topic input, niche picker, provider selection, draft preview with edit capability, one click produce and upload. Non developers can use the full pipeline without touching a terminal.
-- **Google Colab notebook** (`notebooks/shorts_factory.ipynb`). Zero install, runs in browser, paste API keys and go. Includes step by step walkthrough.
-- **Docker support** via `docker-compose.yml`. One command to run the web UI in a container.
+- **TTS providers:** Edge TTS (free, **new default**), ElevenLabs (premium), macOS say (fallback). Select with `--voice`.
+- **Image provider:** Gemini Imagen for b roll and thumbnails, with fallback frames when generation fails.
+- **$0.00 draft mode:** Ollama can generate scripts and metadata without API spend.
 
 ### Added: Upgraded Script Intelligence
 - **Hook pattern system.** Each niche ships with 5 to 8 hook patterns (contrarian_take, breaking_news, prediction, explainer, comparison, story, statistic_shock, question). The LLM is instructed to pick the most appropriate pattern for the topic.
@@ -40,12 +54,6 @@ This is a ground up rethink of the pipeline. The core flow (research → script 
 - **Edge TTS is now the default** TTS provider. Free, cross platform, 300+ voices across 40+ languages. No API key required.
 - Niche profiles include suggested Edge TTS voice IDs per language.
 - ElevenLabs remains available as the premium option.
-
-### Added: Stock Footage Fallback
-- **Pexels integration** provides free stock video clips as b roll alternative to AI generated images.
-- Keyword extraction from the script feeds Pexels search API.
-- Results auto cropped to 9:16 portrait.
-- No API key required for basic usage (rate limited), optional `PEXELS_API_KEY` for higher limits.
 
 ### Added: Multi Platform Export
 - **YouTube** upload with full metadata, SRT captions, and thumbnail (existing, now default).
@@ -84,7 +92,6 @@ This is a ground up rethink of the pipeline. The core flow (research → script 
 - All v2.1 security measures carry forward.
 - YAML niche profiles parsed with `yaml.safe_load()` (no code execution).
 - Ollama provider validates model names against allowlist to prevent injection.
-- Pexels API key sent via header, not URL parameter.
 
 ## [2.1.0] — 2026-02-27
 

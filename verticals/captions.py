@@ -89,12 +89,13 @@ Style: Default,Arial,72,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-    # Convert hex color to ASS BGR format (e.g. #00FF88 -> 88FF00)
+    # Convert hex color to ASS BGR format (e.g. #00FF88 -> 88FF00).
+    # Override tags use &HBBGGRR& without the alpha byte.
     hc = highlight_color.lstrip("#")
     if len(hc) == 6:
-        ass_highlight = f"&H00{hc[4:6]}{hc[2:4]}{hc[0:2]}&"
+        ass_highlight = f"&H{hc[4:6]}{hc[2:4]}{hc[0:2]}&"
     else:
-        ass_highlight = "&H0000FFFF&"  # fallback yellow
+        ass_highlight = "&H00FFFF&"  # fallback yellow
 
     groups = _group_words(words, group_size=group_size)
     events = []

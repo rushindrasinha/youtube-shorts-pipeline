@@ -1,13 +1,13 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "verticals"
-version = "3.0.0"
+version = "3.0.1"
 description = "AI-native vertical video engine with niche intelligence"
 readme = "README.md"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 requires-python = ">=3.10"
 dependencies = [
     "anthropic>=0.39.0,<1.0",

@@ -14,6 +14,11 @@ from .niche import load_niche, get_script_context, get_visual_context, get_visua
 from .research import research_topic
 
 
+def _call_claude(prompt: str) -> str:
+    """Backwards-compatible Claude seam used by older tests and callers."""
+    return call_llm(prompt, provider="claude")
+
+
 def generate_draft(
     news: str,
     channel_context: str = "",
@@ -111,7 +116,10 @@ Output JSON exactly:
   "thumbnail_prompt": "..."
 }}"""
 
-    raw = call_llm(prompt, provider=provider)
+    if provider in (None, "claude"):
+        raw = _call_claude(prompt)
+    else:
+        raw = call_llm(prompt, provider=provider)
 
     # Parse JSON from response
     if raw.startswith("```"):

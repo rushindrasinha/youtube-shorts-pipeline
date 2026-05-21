@@ -22,7 +22,23 @@ The biggest change: **Niche Intelligence**. Every stage of the pipeline now read
 
 15 niches ship out of the box. Build your own in 5 minutes.
 
-Other highlights: multi provider LLM support (Claude, Gemini, GPT, Ollama local), free TTS via Edge TTS, stock footage fallback when you don't want AI images, multi platform export (YouTube, TikTok, Reels, X), a Gradio web UI for non developers, and Google Colab for zero install usage.
+Other highlights: multi provider LLM support (Claude, Gemini, GPT, Ollama local), free TTS via Edge TTS, YouTube upload, topic discovery, resumable stages, and a local-first config model.
+
+## Current Release: v3.0.1
+
+v3.0.1 is a credibility cleanup for the public repo after the first viral traffic spike. The docs now describe only the shipped local pipeline, the repo includes a physical MIT license file, and utility commands such as `--help` and `--niches` work without triggering first-run setup.
+
+Implemented today:
+
+- research with DuckDuckGo plus optional source scraping
+- script and metadata generation through Claude, Gemini, GPT, Ollama, or Claude CLI
+- b roll and thumbnail image generation through Gemini Imagen, with fallback frames
+- voiceover through Edge TTS, ElevenLabs, or macOS `say`
+- Whisper captions with ASS burn-in plus SRT export
+- ffmpeg assembly with Ken Burns motion, background music, and voice ducking
+- private-by-default YouTube upload
+
+Not shipped yet: Gradio UI, Docker, Colab, TikTok/Reels/X upload, Pexels, Replicate, ComfyUI, and Kokoro TTS. Those are roadmap items, not current features.
 
 ## How It Works
 
@@ -37,9 +53,9 @@ Other highlights: multi provider LLM support (Claude, Gemini, GPT, Ollama local)
 │ RESEARCH │→ │  SCRIPT  │→ │ VISUALS  │→ │  VOICE   │→ │ CAPTIONS │→ │ ASSEMBLE │→ UPLOAD
 │          │  │          │  │          │  │          │  │          │  │          │
 │ DuckDuck │  │ LLM with │  │ Gemini   │  │ ElevenLabs│  │ Whisper  │  │ ffmpeg   │
-│ Go + web │  │ niche    │  │ Replicate│  │ Edge TTS │  │ word     │  │ Ken Burns│
-│ scraping │  │ persona  │  │ Pexels   │  │ Kokoro   │  │ level    │  │ + music  │
-│          │  │ + hooks  │  │ ComfyUI  │  │ Bark     │  │ ASS+SRT  │  │ ducking  │
+│ Go + web │  │ niche    │  │ fallback │  │ Edge TTS │  │ word     │  │ Ken Burns│
+│ scraping │  │ persona  │  │ frames   │  │ say      │  │ level    │  │ + music  │
+│          │  │ + hooks  │  │          │  │          │  │ ASS+SRT  │  │ ducking  │
 └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
 
@@ -49,9 +65,9 @@ Other highlights: multi provider LLM support (Claude, Gemini, GPT, Ollama local)
 
 **Script** — An LLM (your choice of provider) writes a 60 to 90 second voiceover script using the niche profile's tone, pacing rules, and hook patterns. The profile tells the LLM things like "open with a question, not a statement" for tech niches or "open with a shocking statistic" for finance niches. Output includes the script, b roll image prompts, thumbnail prompt, and platform metadata for YouTube/TikTok/Instagram/X.
 
-**Visuals** — Generates 3 to 5 b roll frames via your configured image provider: Gemini Imagen (default, free tier available), Replicate (Flux, SDXL), or stock footage from Pexels/Pixabay (completely free, no API key needed). Images are auto cropped to 9:16 portrait. The niche profile shapes the visual vocabulary: a fitness niche generates gym and movement imagery, a science niche generates diagrams and lab visuals.
+**Visuals** — Generates 3 b roll frames via Gemini Imagen, then auto crops them to 9:16 portrait. If image generation fails, the pipeline uses simple fallback frames so assembly can still complete. The niche profile shapes the visual vocabulary: a fitness niche generates gym and movement imagery, a science niche generates diagrams and lab visuals.
 
-**Voice** — Text to speech via your configured provider: Edge TTS (free, cross platform, 300+ voices, **recommended default**), ElevenLabs (premium, most natural), Kokoro (local, open source), or macOS `say` (fallback). The niche profile suggests voice characteristics (pace, energy, tone) but the final voice selection is yours.
+**Voice** — Text to speech via your configured provider: Edge TTS (free, cross platform, 300+ voices, **recommended default**), ElevenLabs (premium, most natural), or macOS `say` (fallback). The niche profile suggests voice characteristics (pace, energy, tone) but the final voice selection is yours.
 
 **Captions** — Whisper generates word level timestamps. The pipeline produces both ASS (burned in with word by word yellow highlight) and SRT (uploaded to YouTube for closed captions). Caption styling follows the niche profile: bold energetic fonts for gaming, clean minimal for tech, warm handwritten feel for lifestyle.
 
@@ -118,37 +134,27 @@ thumbnail:
   text_position: "left_aligned"
 ```
 
-**15 built-in niches:** tech, gaming, finance, fitness, cooking, travel, true_crime, science, politics, entertainment, sports, fashion, education, motivation, comedy.
+**15 built-in niches plus a general fallback:** tech, gaming, finance, fitness, cooking, travel, true_crime, science, politics, entertainment, sports, fashion, education, motivation, comedy, and general.
 
 **Build your own** by copying any profile and editing it. Drop the YAML in `niches/` and reference it with `--niche your_niche_name`.
 
 ## Quickstart
 
-### Option A: Google Colab (zero install)
-
-Colab support is planned, but the notebook is not published in this repo yet. Use the hosted version, Web UI, or CLI for now.
-
-### Option B: Web UI (Gradio)
-
-```bash
-git clone https://github.com/rushindrasinha/youtube-shorts-pipeline.git
-cd youtube-shorts-pipeline
-pip install -r requirements.txt
-python -m verticals ui
-```
-
-Opens a browser UI at `localhost:7860`. Pick a niche, enter a topic, click Generate. Preview the draft before producing.
-
-### Option C: CLI (developers)
+### CLI
 
 ```bash
 git clone https://github.com/rushindrasinha/youtube-shorts-pipeline.git
 cd youtube-shorts-pipeline
 pip install -r requirements.txt
 
-# First run triggers setup wizard (API keys)
 python -m verticals run --topic "your topic" --niche tech
 ```
+
+The old `--news` flag still works for backwards compatibility, but `--topic` is the recommended public API.
+
+### Hosted Version
+
+Use [verticals.gg](https://verticals.gg) if you want the workflow without local setup.
 
 ## CLI Commands
 
@@ -163,7 +169,7 @@ python -m verticals run --discover --niche gaming --auto-pick
 ```bash
 python -m verticals draft --topic "headline" --niche tech
 python -m verticals produce --draft <path> --lang en
-python -m verticals upload --draft <path> --platform youtube
+python -m verticals upload --draft <path> --lang en
 python -m verticals topics --niche tech --limit 20
 ```
 
@@ -171,9 +177,8 @@ python -m verticals topics --niche tech --limit 20
 ```
 --niche NAME         Niche profile (default: general)
 --provider NAME      LLM provider: claude, gemini, openai, ollama (default: claude)
---voice NAME         TTS provider: edge, elevenlabs, kokoro, say (default: edge)
---visuals NAME       Image provider: gemini, replicate, pexels, comfyui (default: gemini)
---platform NAME      Upload target: youtube, tiktok, reels, x (default: youtube)
+--voice NAME         TTS provider: edge, elevenlabs, say (default: edge)
+--platform NAME      Draft target: shorts, reels, tiktok, all (default: shorts)
 --lang CODE          Language: en, hi, es, pt, de, fr, ja, ko (default: en)
 --dry-run            Draft only, skip produce and upload
 --force              Redo all stages even if completed
@@ -198,17 +203,14 @@ python -m verticals topics --niche tech --limit 20
 |----------|------|-------|-------|
 | **Edge TTS** | Free | None | **Recommended default.** 300+ voices, cross platform. |
 | **ElevenLabs** | ~$0.05/video | `ELEVENLABS_API_KEY` | Most natural. Premium. |
-| **Kokoro** | Free | `pip install kokoro` | Local, open source. |
 | **macOS say** | Free | macOS only | Basic fallback. |
 
 ### Visuals (b roll)
 
 | Provider | Cost | Setup | Notes |
 |----------|------|-------|-------|
-| **Gemini Imagen** | Free tier available | `GEMINI_API_KEY` | Default. Good quality. |
-| **Replicate** | ~$0.01/image | `REPLICATE_API_TOKEN` | Flux, SDXL, more models. |
-| **Pexels** | Free | `PEXELS_API_KEY` | Stock footage. No generation. |
-| **ComfyUI** | Free (local GPU) | Running ComfyUI server | Best quality if you have hardware. |
+| **Gemini Imagen** | Free tier available | `GEMINI_API_KEY` | Default image provider. |
+| **Fallback frames** | Free | None | Solid-color fallback frames if image generation fails. |
 
 ### Upload
 
@@ -224,15 +226,13 @@ python -m verticals topics --niche tech --limit 20
 Yes, you can run this with zero API spend:
 
 ```bash
-python -m verticals run \
+python -m verticals draft \
   --topic "your topic" \
   --niche tech \
-  --provider ollama \
-  --voice edge \
-  --visuals pexels
+  --provider ollama
 ```
 
-Uses Ollama (local LLM), Edge TTS (free Microsoft voices), and Pexels (free stock footage). You need a machine that can run a 7B+ parameter model and a free Pexels API key. Quality is lower than the full API stack but it works.
+This creates the script and metadata with a local LLM. Full video production still needs visuals, TTS, captions, and ffmpeg; Edge TTS is free, while Gemini visuals require `GEMINI_API_KEY`.
 
 ## Configuration
 
@@ -244,8 +244,6 @@ All keys stored in `~/.verticals/config.json` with 0600 permissions:
 | `GEMINI_API_KEY` | If using Gemini visuals/LLM | B roll + thumbnails |
 | `OPENAI_API_KEY` | If using GPT | Script generation |
 | `ELEVENLABS_API_KEY` | If using ElevenLabs | Premium voiceover |
-| `REPLICATE_API_TOKEN` | If using Replicate | B roll images |
-| `PEXELS_API_KEY` | If using Pexels | Stock footage |
 
 Environment variables override config file values.
 
@@ -283,30 +281,59 @@ discovery:
 |---------------|------|
 | **Premium** (Claude + Gemini + ElevenLabs) | ~$0.11 |
 | **Budget** (Gemini + Gemini + Edge TTS) | ~$0.04 |
-| **Free** (Ollama + Pexels + Edge TTS) | $0.00 |
+| **Draft-only local** (Ollama) | $0.00 |
+| **Voice-only free path** (Edge TTS) | $0.00 for voice generation |
+
+## Quality Limits
+
+Verticals is built for repeatable short-form production, not for replacing an editor on story-led creative work.
+
+It works best for:
+
+- news explainers
+- niche trend breakdowns
+- list-style educational Shorts
+- fast social experiments where volume matters
+
+It is not ideal for:
+
+- cinematic storytelling
+- creator personality pieces
+- videos that require taste, live footage, or strong art direction
+- factual topics where the research source quality is weak
+
+Use `draft --dry-run` or `run --dry-run` when testing a new niche. The most important human checkpoint is the draft: hook, factual claims, and whether the video has a real reason to exist.
+
+## Distribution Loop
+
+The pipeline is only the production layer. The useful operating loop is:
+
+- Pick a niche with existing short-form demand.
+- Generate and review a small batch of Shorts.
+- Publish consistently on the platforms where that niche already moves.
+- Use one clear call to action: free resource, newsletter, waitlist, or product.
+- Read performance weekly, then tighten the niche profile and hooks.
+
+This repo lowers the cost of testing. It does not remove the need for niche selection, distribution taste, or a real conversion path.
 
 ## Project Structure
 
 ```
 verticals/
 ├── verticals/
-│   ├── __main__.py            # CLI + Gradio UI entry point
+│   ├── __main__.py            # CLI entry point
 │   ├── config.py              # Keys, paths, setup wizard
 │   ├── niche.py               # Niche profile loader
-│   ├── providers/
-│   │   ├── llm.py             # Claude / Gemini / GPT / Ollama
-│   │   ├── tts.py             # ElevenLabs / Edge / Kokoro / say
-│   │   ├── image.py           # Gemini / Replicate / Pexels / ComfyUI
-│   │   └── upload.py          # YouTube / TikTok / Reels / X
-│   ├── stages/
-│   │   ├── research.py        # DuckDuckGo + web scraping
-│   │   ├── draft.py           # Script generation with niche intelligence
-│   │   ├── broll.py           # Image generation + Ken Burns
-│   │   ├── voiceover.py       # TTS with niche voice config
-│   │   ├── captions.py        # Whisper + ASS/SRT
-│   │   ├── music.py           # Track selection + ducking
-│   │   ├── assemble.py        # ffmpeg final assembly
-│   │   └── thumbnail.py       # Thumbnail generation + text overlay
+│   ├── llm.py                 # Claude / Gemini / GPT / Ollama
+│   ├── research.py            # DuckDuckGo research gate
+│   ├── draft.py               # Script generation with niche intelligence
+│   ├── broll.py               # Gemini image generation + Ken Burns
+│   ├── tts.py                 # ElevenLabs / Edge / say
+│   ├── captions.py            # Whisper + ASS/SRT
+│   ├── music.py               # Track selection + ducking
+│   ├── assemble.py            # ffmpeg final assembly
+│   ├── thumbnail.py           # Thumbnail generation + text overlay
+│   ├── upload.py              # YouTube upload
 │   ├── topics/                # Multi source topic engine
 │   ├── state.py               # Resume capability
 │   ├── retry.py               # Exponential backoff
@@ -328,13 +355,7 @@ verticals/
 │   ├── motivation.yaml
 │   ├── comedy.yaml
 │   └── general.yaml           # Default fallback
-├── music/                     # Bundled royalty free tracks
-├── ui/                        # Gradio web interface
 ├── tests/
-├── notebooks/
-│   └── verticals_colab.ipynb   # Google Colab notebook
-├── docker-compose.yml
-├── Dockerfile
 ├── scripts/
 │   └── setup_youtube_oauth.py
 ├── references/
@@ -347,15 +368,8 @@ verticals/
 ## Testing
 
 ```bash
-pip install pytest pytest-mock
-python -m pytest tests/ -v
-```
-
-## Docker
-
-```bash
-docker compose up --build
-# Opens web UI at localhost:7860
+pip install -e ".[dev]"
+python -m pytest tests/ -q
 ```
 
 ## Security
@@ -373,13 +387,16 @@ All security measures from v2 carry forward, plus:
 ## Roadmap
 
 **v3.0** (this release)
-  Niche intelligence, multi provider LLM/TTS/image, Gradio UI, Colab notebook, Edge TTS default, Pexels stock footage, Docker support
+  Niche intelligence, multi provider LLM support, Edge TTS default, topic discovery, resumable stages, YouTube upload
 
 **v3.1** (planned)
   TikTok/Instagram/X upload, multi language niche profiles, A/B script variants (generate 2, pick better), scheduled batch production
 
 **v3.2** (planned)
   Analytics integration (which Shorts performed best), niche profile auto tuning based on performance data, series support (multi episode narrative arcs)
+
+**Later**
+  Web UI, Docker, Google Colab, additional visual providers, stock footage fallback
 
 ## Built By
 

@@ -10,6 +10,23 @@ from .log import log, set_verbose
 from .niche import list_niches
 
 
+def maybe_run_setup(args):
+    """Run first-run setup only for commands that need creator credentials.
+
+    Help, niche listing, topic discovery, and local/free-provider paths should
+    not block on an interactive setup wizard.
+    """
+    if CONFIG_FILE.exists() or args.cmd not in {"draft", "run"}:
+        return
+
+    provider = getattr(args, "provider", None)
+    if provider in {"ollama", "gemini", "openai"}:
+        return
+
+    print("  First run detected. Running setup...")
+    run_setup()
+
+
 def cmd_draft(args):
     from .draft import generate_draft
     from .state import PipelineState
@@ -280,10 +297,6 @@ def cmd_niches(args):
 
 
 def main():
-    if not CONFIG_FILE.exists():
-        print("  First run detected. Running setup...")
-        run_setup()
-
     parser = argparse.ArgumentParser(
         description="Verticals v3 — AI-Native Vertical Video Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -298,7 +311,7 @@ def main():
 
     # draft
     p_draft = sub.add_parser("draft", help="Generate script + metadata")
-    p_draft.add_argument("--news", required=False, help="Topic/news headline")
+    p_draft.add_argument("--topic", "--news", dest="news", required=False, help="Topic/news headline")
     p_draft.add_argument("--context", default="", help="Channel context")
     p_draft.add_argument("--niche", default="general", help=niche_help)
     p_draft.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
@@ -323,7 +336,7 @@ def main():
 
     # run (full pipeline)
     p_run = sub.add_parser("run", help="Full pipeline: draft -> produce -> upload")
-    p_run.add_argument("--news", required=False, help="Topic/news headline")
+    p_run.add_argument("--topic", "--news", dest="news", required=False, help="Topic/news headline")
     p_run.add_argument("--niche", default="general", help=niche_help)
     p_run.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
     p_run.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
@@ -356,6 +369,8 @@ def main():
         cmd_niches(args)
         return
 
+    maybe_run_setup(args)
+
     # Handle --discover flag for draft/run
     if args.cmd in ("draft", "run") and getattr(args, "discover", False):
         from .topics import TopicEngine
@@ -363,7 +378,7 @@ def main():
         engine = TopicEngine(niche=niche)
         candidates = engine.discover(limit=15)
         if not candidates:
-            print("  No trending topics found. Use --news instead.")
+            print("  No trending topics found. Use --topic instead.")
             sys.exit(1)
 
         if getattr(args, "auto_pick", False):
@@ -379,7 +394,7 @@ def main():
             else:
                 args.news = choice
     elif args.cmd in ("draft", "run") and not getattr(args, "news", None):
-        print("  Error: --news or --discover required")
+        print("  Error: --topic or --discover required")
         sys.exit(1)
 
     if args.cmd == "draft":
