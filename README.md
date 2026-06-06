@@ -38,26 +38,10 @@ That one command researches the topic, writes a hook-driven script tuned to the 
 
 Verticals v3 is a **general-purpose AI short-form video pipeline**. Give it a topic and a niche — it handles everything from research to YouTube upload with no manual editing.
 
-**21 niche profiles ship in this repo** — 15 built-in general niches plus 6 custom channel profiles:
+**6 custom channel profiles ship in this repo:**
 
 | File | Channel | Niche |
 |------|---------|-------|
-| `tech.yaml` | Tech & AI News | Technology, AI, startups |
-| `finance.yaml` | Finance & Markets | Investing, markets, economics |
-| `true_crime.yaml` | True Crime & Mystery | Cold cases, investigations |
-| `science.yaml` | Science & Discovery | Breakthroughs, space, nature |
-| `gaming.yaml` | Gaming | Games, esports, reviews |
-| `fitness.yaml` | Fitness | Workouts, health, nutrition |
-| `cooking.yaml` | Cooking | Recipes, food, technique |
-| `travel.yaml` | Travel | Destinations, culture |
-| `politics.yaml` | Politics | News, policy, analysis |
-| `entertainment.yaml` | Entertainment | Pop culture, celebrities |
-| `sports.yaml` | Sports | Games, athletes, stats |
-| `fashion.yaml` | Fashion | Style, trends, brands |
-| `education.yaml` | Education | Learning, history, how-to |
-| `motivation.yaml` | Motivation | Self-improvement, mindset |
-| `comedy.yaml` | Comedy | Humor, satire |
-| `general.yaml` | General | Default fallback |
 | `dopamine_loop.yaml` | **Dopamine Loop** | Psychology / Celebrity / Self-improvement |
 | `finance_fiction.yaml` | **FinanceFiction** | Finance psychology / Behavioral economics |
 | `redacted.yaml` | **REDACTED** | Declassified ops / Hidden history |
@@ -402,23 +386,7 @@ youtube-shorts-pipeline/
 │   ├── state.py               # Resume capability
 │   ├── retry.py               # Exponential backoff
 │   └── log.py                 # Structured logging
-├── niches/                    # 21 niche profiles (15 built-in + 6 custom)
-│   ├── tech.yaml
-│   ├── gaming.yaml
-│   ├── finance.yaml
-│   ├── fitness.yaml
-│   ├── cooking.yaml
-│   ├── travel.yaml
-│   ├── true_crime.yaml
-│   ├── science.yaml
-│   ├── politics.yaml
-│   ├── entertainment.yaml
-│   ├── sports.yaml
-│   ├── fashion.yaml
-│   ├── education.yaml
-│   ├── motivation.yaml
-│   ├── comedy.yaml
-│   ├── general.yaml           # Default fallback
+├── niches/                    # 6 custom channel profiles
 │   ├── dopamine_loop.yaml     # Psychology / Celebrity / Self-improvement
 │   ├── finance_fiction.yaml   # Finance psychology / Behavioral economics
 │   ├── redacted.yaml          # Declassified ops / Hidden history
