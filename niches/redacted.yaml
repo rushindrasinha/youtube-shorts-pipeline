@@ -1,0 +1,80 @@
+name: redacted
+display_name: "REDACTED"
+description: "For channels covering declassified operations, government cover-ups, and hidden history grounded in primary sources."
+script:
+  tone: "grave, serious, investigative, respects the audience's intelligence"
+  pacing: "slow deliberate build, pause after each revelation"
+  perspective: "investigative narrator layering declassified evidence with controlled authority"
+  word_count: "155 to 180"
+  hooks:
+    - id: document_reveal
+      template: "In {year}, a {agency} document classified for {duration} was released. What it contained had been publicly denied for decades."
+      when: "declassified document reveal"
+    - id: operation_open
+      template: "Operation {name}. {year}. {country}. What {agency} did next was kept secret for {timeframe}."
+      when: "named covert operation"
+    - id: testimony
+      template: "In {year}, a {role} testified before {body}. The transcript was sealed. It was released {timeframe} later."
+      when: "congressional or official testimony"
+    - id: paradox
+      template: "{publicly_stated_fact}. That was the official story. The {document_type} tells a different one."
+      when: "official narrative contradicted by primary sources"
+  cta_variants:
+    - "Follow. New declassified breakdown every week."
+    - "Subscribe. History is written by those who control the documents."
+    - "What operation should we cover next? Comment below."
+  forbidden_phrases:
+    - "allegedly"
+    - "conspiracy theory"
+    - "they don't want you to know"
+    - "shocking truth"
+    - "wake up sheeple"
+    - "deep state"
+  structure:
+    opening: "Date, location, operation name or document title. Immediate specificity."
+    middle: "Layer the declassified evidence. Each claim must trace to a real source."
+    closing: "What this reveals about how power actually operates. Then CTA."
+visuals:
+  style: "dark desaturated, document aesthetic, redaction bars as design elements, blood red accents, typewriter texture"
+  mood: "ominous, serious, investigative, documentary gravitas"
+  color_palette: ["#0D0D0D", "#FF3333", "#C0C0C0", "#4A4A4A", "#1A0000"]
+  subjects:
+    prefer:
+      - "old documents and files"
+      - "government building architecture"
+      - "shadowed corridors"
+      - "archival-feel photography"
+      - "maps with markers"
+      - "redacted text as visual"
+    avoid:
+      - "cartoon conspiracy corkboards"
+      - "X-files aesthetic"
+      - "alien imagery"
+      - "anything comedic"
+  prompt_suffix: "declassified document aesthetic, dark desaturated, film grain, archival photography, cold war era, government documentary feel, blood red accent"
+voice:
+  pace: "deliberate, approximately 130 words per minute"
+  energy: "grave, controlled authority, slow and weighted"
+  suggested_voices:
+    edge_tts:
+      en: "en-US-GuyNeural"
+captions:
+  highlight_color: "#FF3333"
+  words_per_group: 3
+music:
+  mood: "dark cinematic, tense documentary, Hans Zimmer inspired, no lyrics, cold war tension"
+  energy: "low"
+  tags: ["dark", "cinematic", "documentary", "tension", "orchestral", "cold war"]
+  duck_volume_speech: 0.08
+  duck_volume_gap: 0.15
+thumbnail:
+  style: "dark near-black background, blood red accent text, redaction bar element, document or classified stamp aesthetic"
+  accent_color: "#FF3333"
+  max_words: 4
+discovery:
+  reddit:
+    subreddits: ["conspiracy", "history", "worldnews", "UNSKSPolitics", "declassified", "intelligence"]
+  rss:
+    feeds:
+      - "https://theintercept.com/feed/"
+      - "https://www.propublica.org/feeds/propublica/main"

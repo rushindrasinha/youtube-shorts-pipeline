@@ -1,0 +1,83 @@
+name: finance_fiction
+display_name: "FinanceFiction"
+description: "For channels covering finance psychology, behavioral economics, and money illusions for adults curious about their own financial decisions."
+script:
+  tone: "clear, data-driven, authoritative but never preachy"
+  pacing: "measured, let numbers breathe, build to conclusion"
+  perspective: "calm authority unpacking the hidden psychology behind money decisions"
+  word_count: "140 to 165"
+  hooks:
+    - id: stat_shock
+      template: "{X}% of {demographic} {shocking_financial_behavior}. Here's the psychology behind it."
+      when: "behavioral finance statistic"
+    - id: illusion_reveal
+      template: "You think you understand {financial_concept}. Your brain is lying to you."
+      when: "cognitive bias in financial decision making"
+    - id: contrarian
+      template: "The advice that made {entity} billions is quietly making you poorer."
+      when: "mainstream financial advice that backfires psychologically"
+    - id: breaking
+      template: "Something just changed in {financial_system} and almost nobody noticed."
+      when: "policy shift, market structure change"
+    - id: explainer
+      template: "What is {financial_concept}? And why does it cost the average person ${amount} a year?"
+      when: "explaining a costly but misunderstood mechanism"
+  cta_variants:
+    - "Follow for the psychology of money, daily."
+    - "Subscribe. Most people learn this too late."
+    - "Has this happened to you? Comment below."
+  forbidden_phrases:
+    - "financial advice"
+    - "guaranteed returns"
+    - "get rich quick"
+    - "not financial advice but"
+    - "to the moon"
+    - "HODL"
+    - "diamond hands"
+  structure:
+    opening: "Lead with a number or paradox. No greeting. No setup."
+    middle: "Name the psychological bias or economic phenomenon. Give it weight with data."
+    closing: "What this means for the average person's wallet. Then CTA."
+visuals:
+  style: "pure OLED black, teal accents, clean data aesthetic, glassmorphic stat cards"
+  mood: "serious, intelligent, trustworthy, modern fintech aesthetic"
+  color_palette: ["#000000", "#00D4AA", "#FFFFFF", "#FF453A", "#1A1A2E"]
+  subjects:
+    prefer:
+      - "abstract data visualization"
+      - "financial charts on dark screens"
+      - "brain imagery representing decision making"
+      - "minimalist architectural shots"
+      - "numbers floating in dark space"
+    avoid:
+      - "cartoon money illustrations"
+      - "piggy banks"
+      - "person throwing money"
+      - "generic office stock"
+      - "cryptocurrency logos"
+  prompt_suffix: "pure black OLED background, teal accent glow, data visualization aesthetic, clean minimalist, cinematic financial, glassmorphic"
+voice:
+  pace: "measured, approximately 145 words per minute"
+  energy: "calm authority, measured confidence"
+  suggested_voices:
+    edge_tts:
+      en: "en-US-GuyNeural"
+captions:
+  highlight_color: "#00D4AA"
+  words_per_group: 4
+music:
+  mood: "ambient, subtle tension, no lyrics, corporate documentary feel"
+  energy: "low to medium"
+  tags: ["ambient", "corporate", "documentary", "tension", "minimal"]
+  duck_volume_speech: 0.10
+  duck_volume_gap: 0.20
+thumbnail:
+  style: "pure black background, bold teal numbers or percentages, clean minimal"
+  accent_color: "#00D4AA"
+  max_words: 4
+discovery:
+  reddit:
+    subreddits: ["personalfinance", "investing", "economics", "BehavioralEconomics", "financialindependence", "money"]
+  rss:
+    feeds:
+      - "https://feeds.bloomberg.com/markets/news.rss"

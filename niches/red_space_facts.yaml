@@ -1,0 +1,82 @@
+name: red_space_facts
+display_name: "Red Space Facts"
+description: "For channels covering space facts, astronomy, cosmic scale, and universe mysteries sourced from NASA, ESA, and peer-reviewed research."
+script:
+  tone: "awestruck, precise, builds from interesting to genuinely mind-altering"
+  pacing: "starts measured, accelerates as the scale becomes apparent"
+  perspective: "awestruck guide translating cosmic scale into human terms"
+  word_count: "140 to 160"
+  hooks:
+    - id: scale_comparison
+      template: "If {cosmic_object} were {relatable_size}, {mind_bending_comparison}."
+      when: "scale fact about a celestial object"
+    - id: time_fact
+      template: "The light reaching your eyes from {star_or_object} left it {timeframe} ago. {implication}."
+      when: "light travel time or cosmic time facts"
+    - id: cosmic_discovery
+      template: "{agency or telescope} just confirmed something about {topic} that rewrites {aspect of cosmology}."
+      when: "recent verified space discovery"
+    - id: existence_fact
+      template: "There are more {astronomical_object} in the observable universe than {relatable_large_number}. Let that land."
+      when: "quantity or abundance cosmic fact"
+    - id: proximity_fact
+      template: "The closest {object_type} to Earth outside our solar system is {distance} away. At our fastest spacecraft speed, that is {timeframe}."
+      when: "distance facts that reframe interstellar travel"
+  cta_variants:
+    - "Follow. One space fact that will ruin your sense of scale, daily."
+    - "Subscribe. The universe is stranger than you think."
+    - "Which space fact breaks your brain? Comment below."
+  forbidden_phrases:
+    - "alien"
+    - "UFO"
+    - "literally"
+    - "crazy"
+    - "insane"
+  structure:
+    opening: "The fact, stated boldly. No setup. No did you know."
+    middle: "Make the scale human. One analogy per fact. Source it."
+    closing: "The philosophical or scientific implication. Leave them staring at the ceiling. CTA."
+visuals:
+  style: "pure OLED black space, deep field imagery, red accent on bold white text, cosmic scale visualization, nebulae and galaxies"
+  mood: "vast, awe-inspiring, humbling, cinematic, NASA quality"
+  color_palette: ["#000000", "#FF4444", "#FFFFFF", "#1A0A0A", "#4A1A1A"]
+  subjects:
+    prefer:
+      - "deep space nebulae"
+      - "galaxy fields"
+      - "planet scale comparisons"
+      - "star fields"
+      - "cosmic visualization"
+      - "space telescope imagery style"
+    avoid:
+      - "cartoon rockets"
+      - "flat planet illustrations"
+      - "cheesy UFO imagery"
+      - "anything that looks like clip art"
+  prompt_suffix: "NASA quality deep space photography, OLED pure black background, cosmic scale, photorealistic nebula, cinematic space, red accent glow"
+voice:
+  pace: "awestruck, approximately 145 words per minute"
+  energy: "awestruck curiosity building to mind-blown delivery"
+  suggested_voices:
+    edge_tts:
+      en: "en-US-GuyNeural"
+captions:
+  highlight_color: "#FF4444"
+  words_per_group: 4
+music:
+  mood: "epic space ambient, Hans Zimmer Interstellar inspired, vast, no lyrics, cosmic wonder"
+  energy: "medium building to high"
+  tags: ["space", "epic", "ambient", "cinematic", "cosmic", "orchestral"]
+  duck_volume_speech: 0.09
+  duck_volume_gap: 0.18
+thumbnail:
+  style: "pure black space background, bold red or white text, deep space visual, NASA quality imagery"
+  accent_color: "#FF4444"
+  max_words: 4
+discovery:
+  reddit:
+    subreddits: ["space", "Astronomy", "astrophysics", "cosmology", "nasa", "spaceporn"]
+  rss:
+    feeds:
+      - "https://www.nasa.gov/rss/dyn/breaking_news.rss"
+      - "https://www.esa.int/rssfeed/Our_Activities/Space_Science"

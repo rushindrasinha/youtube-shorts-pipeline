@@ -1,0 +1,78 @@
+name: grey_matter
+display_name: "The Grey Matter"
+description: "For channels covering neuroscience and how the brain actually works, making science personal and accessible."
+script:
+  tone: "curious, precise, accessible, makes neuroscience feel personal not academic"
+  pacing: "builds from simple concept to surprising implication"
+  perspective: "curious professor making brain science tangible and personal"
+  word_count: "150 to 170"
+  hooks:
+    - id: mechanism_reveal
+      template: "Every time you {common_behavior}, your {brain_region} releases {neurochemical}. Here's what that actually does to you."
+      when: "explaining a common behavior through neuroscience"
+    - id: research_finding
+      template: "A {year} study at {institution} found that {surprising_brain_finding}. Most people experience this every day without knowing it."
+      when: "citing specific research"
+    - id: reframe
+      template: "You think {common_experience} is about {common_explanation}. Your prefrontal cortex disagrees."
+      when: "reframing a common experience neurologically"
+    - id: scale
+      template: "Your brain makes {number} decisions per second. {fraction} of them are conscious."
+      when: "scale or capacity of the brain"
+  cta_variants:
+    - "Follow for neuroscience in 60 seconds."
+    - "Subscribe. Your brain will thank you."
+    - "Has your brain done this to you? Comment below."
+  forbidden_phrases:
+    - "quantum"
+    - "baffled"
+    - "literally"
+    - "scientists amazed"
+    - "mind blowing"
+  structure:
+    opening: "Name the brain region or neurochemical. Specific. Confident."
+    middle: "One mechanism, explained simply. One analogy max. Ground in a named study or researcher."
+    closing: "One behavior change the viewer can make tonight. Then CTA."
+visuals:
+  style: "clean white or light background, blue accents, clinical precision, diagram aesthetic"
+  mood: "intelligent, clean, trustworthy, medically precise"
+  color_palette: ["#FFFFFF", "#F2F2F7", "#0A84FF", "#30D158", "#FF453A"]
+  subjects:
+    prefer:
+      - "brain scans and diagrams"
+      - "neuron close ups"
+      - "clean laboratory visuals"
+      - "data visualization of brain activity"
+      - "anatomical precision"
+    avoid:
+      - "cartoon brains"
+      - "psychedelic imagery"
+      - "dark moody aesthetics"
+      - "anything that looks unscientific"
+  prompt_suffix: "clean white clinical aesthetic, blue accent, medical diagram style, precise scientific visualization, bright professional lighting, neuroscience"
+voice:
+  pace: "curious, approximately 150 words per minute"
+  energy: "curious, building excitement, professorial but warm"
+  suggested_voices:
+    edge_tts:
+      en: "en-US-JennyNeural"
+captions:
+  highlight_color: "#0A84FF"
+  words_per_group: 4
+music:
+  mood: "thoughtful ambient, slightly electronic, focus music, no lyrics, calm intelligence"
+  energy: "low to medium"
+  tags: ["ambient", "focus", "electronic", "calm", "intelligent"]
+  duck_volume_speech: 0.12
+  duck_volume_gap: 0.22
+thumbnail:
+  style: "clean white or light gray background, bold blue text, brain or diagram visual"
+  accent_color: "#0A84FF"
+  max_words: 5
+discovery:
+  reddit:
+    subreddits: ["neuroscience", "psychology", "cogsci", "askscience", "BrainScience", "slatestarcodex"]
+  rss:
+    feeds:
+      - "https://www.sciencedaily.com/rss/mind_brain.xml"
+      - "https://www.nih.gov/news-events/news-releases/feed"

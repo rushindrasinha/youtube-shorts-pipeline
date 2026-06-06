@@ -1,0 +1,82 @@
+name: dopamine_loop
+display_name: "Dopamine Loop"
+description: "For channels covering psychology, celebrity behavior, and self-improvement for ambitious young men."
+script:
+  tone: "raw, direct, no fluff, treats audience as intelligent adults"
+  pacing: "fast, dense, every sentence earns its place"
+  perspective: "confident authority delivering psychological insight without hand-holding"
+  word_count: "150 to 170"
+  hooks:
+    - id: celebrity_reveal
+      template: "{celebrity} didn't get to the top by working harder. They rewired their brain."
+      when: "celebrity psychology story"
+    - id: stat_shock
+      template: "{X}% of high performers share one psychological trait most people actively suppress."
+      when: "counterintuitive psychology stat"
+    - id: contrarian
+      template: "Everything you were told about {topic} is designed to keep you average."
+      when: "debunking mainstream self-help advice"
+    - id: case_study
+      template: "{celebrity} lost everything in {year}. What they did next is a masterclass in {psychology_concept}."
+      when: "celebrity comeback or failure story"
+    - id: question
+      template: "Why do the most successful people on earth deliberately make themselves uncomfortable?"
+      when: "behavioral psychology angle"
+  cta_variants:
+    - "Follow. New psychology breakdown daily."
+    - "Subscribe before the algorithm buries this."
+    - "Drop the name of someone who needs to hear this."
+  forbidden_phrases:
+    - "amazing"
+    - "journey"
+    - "grind"
+    - "hustle"
+    - "level up"
+    - "boss up"
+    - "sigma"
+    - "alpha"
+  structure:
+    opening: "Name drop or stat in the first 3 seconds. Never a greeting."
+    middle: "Connect the celebrity behavior to a psychological principle with a name."
+    closing: "One sentence the viewer can act on today. Then CTA."
+visuals:
+  style: "OLED black backgrounds, electric yellow accents, VHS grain overlay, high contrast"
+  mood: "intense, raw, cinematic, underground feel"
+  color_palette: ["#0A0A0A", "#E8FF47", "#FFFFFF", "#FF0000", "#1A1A1A"]
+  subjects:
+    prefer:
+      - "dramatic portrait lighting"
+      - "urban environments at night"
+      - "abstract psychological concepts visualized"
+      - "bold typography as visual element"
+    avoid:
+      - "generic stock office"
+      - "cheesy motivational posters"
+      - "clipart"
+      - "bright cheerful scenes"
+  prompt_suffix: "OLED black background, electric yellow accent, film grain, dramatic contrast, cinematic portrait lighting, underground aesthetic"
+voice:
+  pace: "fast, approximately 160 words per minute"
+  energy: "high energy, direct, confident"
+  suggested_voices:
+    edge_tts:
+      en: "en-US-GuyNeural"
+captions:
+  highlight_color: "#E8FF47"
+  words_per_group: 3
+music:
+  mood: "dark electronic, driving beat, no lyrics, underground energy"
+  energy: "high"
+  tags: ["electronic", "dark", "driving", "underground", "cinematic"]
+  duck_volume_speech: 0.08
+  duck_volume_gap: 0.15
+thumbnail:
+  style: "OLED black, electric yellow text, celebrity or concept visual, high contrast"
+  accent_color: "#E8FF47"
+  max_words: 4
+discovery:
+  reddit:
+    subreddits: ["psychology", "selfimprovement", "productivity", "DecidingToBeBetter", "CGPGrey", "Entrepreneur"]
+  rss:
+    feeds:
+      - "https://www.psychologytoday.com/us/front-page/feed"

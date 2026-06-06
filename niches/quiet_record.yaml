@@ -1,0 +1,78 @@
+name: quiet_record
+display_name: "The Quiet Record"
+description: "For channels recovering forgotten history and buried stories that were meant to stay hidden."
+script:
+  tone: "measured, reverent, investigative, treats history as alive not academic"
+  pacing: "slow, deliberate, every sentence weighted"
+  perspective: "measured documentarian recovering stories history tried to erase"
+  word_count: "160 to 185"
+  hooks:
+    - id: forgotten_moment
+      template: "In {year}, {person or group} did something that changed {thing}. History forgot them almost immediately."
+      when: "erased historical figure or event"
+    - id: buried_story
+      template: "{widely_known_fact} is the official story. Here's what actually happened in {year}, according to {primary_source}."
+      when: "official narrative vs archival evidence"
+    - id: anniversary
+      template: "{number} years ago today, {event} happened. Almost nobody remembers it."
+      when: "historical anniversary"
+    - id: survivor
+      template: "{person} was one of {number} people who witnessed {event}. Their account was suppressed for {timeframe}."
+      when: "eyewitness or survivor testimony"
+  cta_variants:
+    - "Follow. History that was meant to be forgotten."
+    - "Subscribe. One buried story, every week."
+    - "Which forgotten story should we uncover next? Comment below."
+  forbidden_phrases:
+    - "amazing"
+    - "crazy"
+    - "you won't believe"
+    - "literally"
+    - "totally"
+  structure:
+    opening: "Specific date, specific place, specific person. Tell us what was at stake."
+    middle: "The story of what happened and how it was buried. Primary sources where possible."
+    closing: "Why this moment still matters today. The line connecting then to now. CTA."
+visuals:
+  style: "warm sepia tones, aged paper texture, archival photography feel, gold accents, warm near-black backgrounds"
+  mood: "reflective, melancholic, reverent, documentary gravitas, museum quality"
+  color_palette: ["#1A1008", "#C8A24B", "#FAF7F0", "#8B6914", "#4A3728"]
+  subjects:
+    prefer:
+      - "aged documents and maps"
+      - "historical architecture"
+      - "archival-style portraits"
+      - "warm candlelight or lantern lighting"
+      - "period-appropriate settings"
+    avoid:
+      - "modern bright colors"
+      - "digital aesthetics"
+      - "anything anachronistic"
+      - "clipart history illustrations"
+  prompt_suffix: "archival photography, warm sepia tone, aged paper texture, documentary aesthetic, candlelight warmth, historical gravitas, museum quality"
+voice:
+  pace: "deliberate, approximately 130 words per minute"
+  energy: "measured, gravitas, British documentary feel"
+  suggested_voices:
+    edge_tts:
+      en: "en-GB-RyanNeural"
+captions:
+  highlight_color: "#C8A24B"
+  words_per_group: 3
+music:
+  mood: "orchestral documentary, melancholic, Ken Burns style, reflective, no lyrics"
+  energy: "low"
+  tags: ["orchestral", "documentary", "melancholic", "historical", "reflective"]
+  duck_volume_speech: 0.08
+  duck_volume_gap: 0.15
+thumbnail:
+  style: "warm sepia or dark warm background, aged gold text, historical image or document element, museum quality"
+  accent_color: "#C8A24B"
+  max_words: 5
+discovery:
+  reddit:
+    subreddits: ["history", "AskHistorians", "HistoryPorn", "ArtefactPorn", "lost_history", "obscurehistory"]
+  rss:
+    feeds:
+      - "https://www.historytoday.com/feed"
+      - "https://www.smithsonianmag.com/rss/history-archaeology/"
