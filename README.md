@@ -199,28 +199,58 @@ After setup, your `~/.verticals/config.json` looks like:
 
 ## GitHub Actions Secrets (for automated daily runs)
 
-The workflow at `.github/workflows/daily_shorts.yml` runs all 6 channels twice a day automatically. It needs **2 GitHub repository secrets** — not environment variables, not config files. Add them at:
+The workflow at `.github/workflows/daily_shorts.yml` runs all 6 channels twice a day automatically. Each channel uploads to its **own YouTube channel** using its own token — so you need one token per channel.
 
-**GitHub repo → Settings → Secrets and variables → Actions → New repository secret**
+Add all secrets at: **GitHub repo → Settings → Secrets and variables → Actions → New repository secret**
 
-| Secret name | What it contains | How to get it |
-|-------------|-----------------|---------------|
-| `VERTICALS_CONFIG` | The full contents of your `~/.verticals/config.json` as a single JSON string | Run the pipeline locally once, then `cat ~/.verticals/config.json` and paste the output |
-| `YOUTUBE_TOKEN` | The full contents of your `~/.verticals/youtube_token.json` as a single JSON string | Run `python scripts/setup_youtube_oauth.py` locally, then `cat ~/.verticals/youtube_token.json` and paste the output |
+### Secret 1 — Shared API keys (one secret, all channels)
 
-**`VERTICALS_CONFIG` example value** (paste the whole thing as the secret):
+| Secret name | What it contains |
+|-------------|-----------------|
+| `VERTICALS_CONFIG` | The full contents of `~/.verticals/config.json` as a single-line JSON string |
+
 ```json
 {"ANTHROPIC_API_KEY":"sk-ant-...","GEMINI_API_KEY":"AIza..."}
 ```
 
-**`YOUTUBE_TOKEN` example value** (paste the whole thing as the secret):
+Run the pipeline locally once to generate it, then `cat ~/.verticals/config.json` and paste the output.
+
+### Secrets 2–7 — One YouTube token per channel
+
+Each channel has its own YouTube account. You need to run the OAuth setup once **logged in to each YouTube channel** to generate a separate token for that channel.
+
+| Secret name | Channel |
+|-------------|---------|
+| `YOUTUBE_TOKEN_CH1` | Dopamine Loop |
+| `YOUTUBE_TOKEN_CH2` | FinanceFiction |
+| `YOUTUBE_TOKEN_CH3` | REDACTED |
+| `YOUTUBE_TOKEN_CH4` | The Grey Matter |
+| `YOUTUBE_TOKEN_CH5` | The Quiet Record |
+| `YOUTUBE_TOKEN_CH6` | Red Space Facts |
+
+**For each channel, do this:**
+
+1. Log in to the Google account that owns that YouTube channel
+2. Run the OAuth setup:
+   ```bash
+   python scripts/setup_youtube_oauth.py
+   ```
+3. Complete the browser sign-in flow — it will save the token to `~/.verticals/youtube_token.json`
+4. Copy the token:
+   ```bash
+   cat ~/.verticals/youtube_token.json
+   ```
+5. Paste that output as the value for that channel's secret (e.g. `YOUTUBE_TOKEN_CH1`)
+6. Sign out, sign in to the next channel's Google account, repeat
+
+The token looks like this — paste the whole thing:
 ```json
 {"token":"ya29...","refresh_token":"1//...","token_uri":"https://oauth2.googleapis.com/token","client_id":"...","client_secret":"...","scopes":["https://www.googleapis.com/auth/youtube.upload","https://www.googleapis.com/auth/youtube.force-ssl"]}
 ```
 
-Once both secrets are set, the workflow triggers automatically at **8 AM UTC** (morning) and **6 PM UTC** (evening) every day — producing 1 Short per channel per run, 2 Shorts per channel per day across all 6 channels.
+Once all 7 secrets are set, the workflow fires automatically at **8 AM UTC** and **6 PM UTC** every day. Each job writes its own channel token before uploading, so the video always lands on the correct channel.
 
-You can also trigger a single run manually from **GitHub → Actions → Daily Shorts — All Channels → Run workflow**, with an optional niche filter to run just one channel.
+You can also trigger a manual run from **GitHub → Actions → Daily Shorts — All Channels → Run workflow**, with an optional niche name to run just one channel.
 
 ---
 

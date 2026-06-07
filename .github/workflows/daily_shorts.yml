@@ -38,7 +38,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH1 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
@@ -74,7 +74,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH2 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
@@ -110,7 +110,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH3 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
@@ -146,7 +146,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH4 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
@@ -182,7 +182,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH5 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
@@ -218,7 +218,7 @@ jobs:
           mkdir -p ~/.verticals
           echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
           chmod 600 ~/.verticals/config.json
-          echo '${{ secrets.YOUTUBE_TOKEN }}' > ~/.verticals/youtube_token.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH6 }}' > ~/.verticals/youtube_token.json
           chmod 600 ~/.verticals/youtube_token.json
 
       - name: Discover topic and run pipeline
