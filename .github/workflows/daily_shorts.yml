@@ -29,9 +29,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
@@ -69,9 +69,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
@@ -109,9 +109,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
@@ -149,9 +149,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
@@ -189,9 +189,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
@@ -229,9 +229,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
           printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
             | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get update
           sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
