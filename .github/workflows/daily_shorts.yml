@@ -28,7 +28,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -64,7 +70,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -100,7 +112,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -136,7 +154,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -172,7 +196,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -208,7 +238,13 @@ jobs:
           cache: pip
 
       - name: Install system dependencies
-        run: sudo apt-get install -y --fix-missing ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y equivs
+          printf 'Section: misc\nPriority: optional\nStandards-Version: 3.9.2\nPackage: libcaca0\nVersion: 99.99\nDescription: dummy\n' > /tmp/libcaca0.ctl
+          equivs-build /tmp/libcaca0.ctl
+          sudo dpkg -i /tmp/libcaca0_99.99_all.deb
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
