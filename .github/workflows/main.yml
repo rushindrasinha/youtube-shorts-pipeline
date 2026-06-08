@@ -1,0 +1,232 @@
+name: Daily Shorts — All Channels
+
+# Runs twice a day: 8 AM UTC (morning drop) and 6 PM UTC (evening drop)
+# Each run produces 1 Short per channel across all 6 channels = 2 Shorts/day per channel
+
+on:
+  schedule:
+    - cron: "0 8 * * *"   # Morning run — 8:00 AM UTC
+    - cron: "0 18 * * *"  # Evening run — 6:00 PM UTC
+  workflow_dispatch:        # Manual trigger from GitHub Actions UI
+    inputs:
+      niche:
+        description: "Run a single niche only (leave blank for all channels)"
+        required: false
+        default: ""
+
+jobs:
+  dopamine_loop:
+    name: "CH1 — Dopamine Loop"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'dopamine_loop' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH1 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche dopamine_loop \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
+
+  finance_fiction:
+    name: "CH2 — FinanceFiction"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'finance_fiction' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH2 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche finance_fiction \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
+
+  redacted:
+    name: "CH3 — REDACTED"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'redacted' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH3 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche redacted \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
+
+  grey_matter:
+    name: "CH4 — The Grey Matter"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'grey_matter' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH4 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche grey_matter \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
+
+  quiet_record:
+    name: "CH5 — The Quiet Record"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'quiet_record' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH5 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche quiet_record \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
+
+  red_space_facts:
+    name: "CH6 — Red Space Facts"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.niche == '' || github.event.inputs.niche == 'red_space_facts' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write credentials
+        run: |
+          mkdir -p ~/.verticals
+          echo '${{ secrets.VERTICALS_CONFIG }}' > ~/.verticals/config.json
+          chmod 600 ~/.verticals/config.json
+          echo '${{ secrets.YOUTUBE_TOKEN_CH6 }}' > ~/.verticals/youtube_token.json
+          chmod 600 ~/.verticals/youtube_token.json
+
+      - name: Discover topic and run pipeline
+        run: |
+          python -m verticals run \
+            --discover \
+            --niche red_space_facts \
+            --auto-pick \
+            --provider claude \
+            --voice edge \
+            --platform shorts
