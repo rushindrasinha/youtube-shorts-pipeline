@@ -30,8 +30,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -69,8 +70,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -108,8 +110,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -147,8 +150,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -186,8 +190,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
@@ -225,8 +230,9 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcaca0 || true
-          sudo apt-get install -y ffmpeg --no-install-recommends
+          printf 'Package: libcaca0\nPin: release a=noble-updates\nPin-Priority: -1\n' \
+            | sudo tee /etc/apt/preferences.d/libcaca0
+          sudo apt-get install -y ffmpeg
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
