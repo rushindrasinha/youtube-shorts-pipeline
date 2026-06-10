@@ -1,8 +1,13 @@
 """Multi-provider LLM abstraction.
 
-Supports: claude (Anthropic), gemini (Google), openai (OpenAI), ollama (local),
+Supports: claude (Anthropic), gemini (Google), openai (OpenAI or any
+OpenAI-compatible gateway such as Atlas Cloud), ollama (local),
 litellm (100+ providers via unified SDK).
 Provider selection: --provider flag or LLM_PROVIDER env var or config.json.
+
+To route the `openai` provider through an OpenAI-compatible gateway like
+Atlas Cloud, set OPENAI_BASE_URL=https://api.atlascloud.ai/v1 alongside your
+OPENAI_API_KEY (and optionally OPENAI_MODEL).
 """
 
 import json
@@ -151,22 +156,40 @@ def _call_gemini(prompt: str, max_tokens: int) -> str:
 
 
 def _call_openai(prompt: str, max_tokens: int) -> str:
-    """Call OpenAI GPT via API."""
+    """Call an OpenAI-compatible chat completions endpoint.
+
+    Works with the official OpenAI API and any OpenAI-compatible gateway
+    (e.g. Atlas Cloud, Azure OpenAI, OpenRouter). Override the endpoint with
+    OPENAI_BASE_URL and the model with OPENAI_MODEL.
+
+    Atlas Cloud example (single API for 300+ LLMs, OpenAI-compatible):
+        OPENAI_BASE_URL=https://api.atlascloud.ai/v1
+        OPENAI_API_KEY=<your Atlas Cloud key>
+        OPENAI_MODEL=deepseek-ai/DeepSeek-V3-0324
+    """
     import requests
 
     from .config import load_config
-    api_key = os.environ.get("OPENAI_API_KEY") or load_config().get("OPENAI_API_KEY", "")
+    cfg = load_config()
+    api_key = os.environ.get("OPENAI_API_KEY") or cfg.get("OPENAI_API_KEY", "")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY not set")
 
+    base_url = (
+        os.environ.get("OPENAI_BASE_URL")
+        or cfg.get("OPENAI_BASE_URL")
+        or "https://api.openai.com/v1"
+    ).rstrip("/")
+    model = os.environ.get("OPENAI_MODEL") or cfg.get("OPENAI_MODEL") or "gpt-4o-mini"
+
     r = requests.post(
-        "https://api.openai.com/v1/chat/completions",
+        f"{base_url}/chat/completions",
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
         json={
-            "model": "gpt-4o-mini",
+            "model": model,
             "max_tokens": max_tokens,
             "temperature": 0.7,
             "messages": [{"role": "user", "content": prompt}],
@@ -174,7 +197,7 @@ def _call_openai(prompt: str, max_tokens: int) -> str:
         timeout=60,
     )
     if r.status_code != 200:
-        raise RuntimeError(f"OpenAI API {r.status_code}: {r.text[:300]}")
+        raise RuntimeError(f"OpenAI-compatible API {r.status_code}: {r.text[:300]}")
 
     data = r.json()
     return data["choices"][0]["message"]["content"].strip()

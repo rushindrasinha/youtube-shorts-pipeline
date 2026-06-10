@@ -12,6 +12,55 @@
 python -m verticals run --topic "Sam Altman just mass-fired 200 safety researchers" --niche tech
 ```
 
+---
+
+<p align="center">
+  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline">
+    <img src="./docs/atlas-cloud-logo.png" alt="Atlas Cloud" width="200">
+  </a>
+</p>
+
+> 🎁 **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline)** is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities.
+>
+> This pipeline touches both halves of Atlas Cloud at once: the **script** stage needs an LLM, and the **visuals/thumbnail** stages need image generation. With Atlas Cloud you point both at one key. Its LLM endpoint is OpenAI-compatible, so the `openai` provider works out of the box:
+>
+> ```bash
+> export OPENAI_BASE_URL="https://api.atlascloud.ai/v1"
+> export OPENAI_API_KEY="<your Atlas Cloud key>"
+> export OPENAI_MODEL="deepseek-ai/DeepSeek-V3-0324"   # or any LLM from the list below
+> python -m verticals run --topic "your topic" --niche tech --provider openai
+> ```
+>
+> Check out Atlas Cloud's coding plan for more budget-friendly API access: <https://www.atlascloud.ai/console/coding-plan>
+
+<details>
+<summary><strong>Atlas Cloud model catalog (LLM + image/video)</strong></summary>
+
+**LLM** (OpenAI-compatible, set as `OPENAI_MODEL`), a selection from the official list at <https://www.atlascloud.ai/zh/models/list/llm>:
+
+- Anthropic (Claude): `anthropic/claude-haiku-4.5-20251001`, `anthropic/claude-opus-4.8`, `anthropic/claude-sonnet-4.6`
+- OpenAI (GPT): `openai/gpt-5.4`, `openai/gpt-5.5`
+- Google (Gemini): `google/gemini-3.1-flash-lite`, `google/gemini-3.1-pro-preview`, `google/gemini-3.5-flash`
+- DeepSeek: `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`, `deepseek-ai/deepseek-v3.2`
+- Qwen: `Qwen/Qwen3-235B-A22B-Instruct-2507`, `Qwen/Qwen3-Coder`, `qwen/qwen3-max-2026-01-23`
+- Moonshot (Kimi): `moonshotai/Kimi-K2-Instruct`, `moonshotai/Kimi-K2-Thinking`
+- Zhipu (GLM): `zai-org/GLM-4.6`, `zai-org/glm-5`
+- MiniMax: `MiniMaxAI/MiniMax-M2`
+- xAI: `xai/grok-4.3`
+
+**Image / video** (for b-roll, thumbnails, and future video stages):
+
+- TEXT-TO-IMAGE: `alibaba/wan-2.7/text-to-image`, `qwen/qwen-image-2.0/text-to-image`, `openai/gpt-image-2/text-to-image`
+- IMAGE-TO-IMAGE: `alibaba/wan-2.7/image-edit`, `qwen/qwen-image-2.0/edit`, `openai/gpt-image-2/edit`
+- TEXT-TO-VIDEO: `bytedance/seedance-2.0-fast/text-to-video`, `alibaba/wan-2.7/text-to-video`, `google/veo3.1/text-to-video`
+- IMAGE-TO-VIDEO: `bytedance/seedance-2.0-fast/image-to-video`, `alibaba/wan-2.7/image-to-video`, `google/veo3.1/image-to-video`
+
+See the full catalog and docs at <https://www.atlascloud.ai/docs>.
+
+</details>
+
+---
+
 That one command researches the topic, writes a hook driven script tuned to tech YouTube, generates cinematic b roll, records a natural voiceover, burns in animated captions, adds mood matched background music, generates a thumbnail, and uploads it to YouTube. ~90 seconds of video, ~3 minutes of wall time, ~$0.11 in API costs.
 
 ## What Changed in v3
@@ -194,6 +243,7 @@ python -m verticals topics --niche tech --limit 20
 | **Claude** (Anthropic) | ~$0.02/script | `ANTHROPIC_API_KEY` | Best quality. Default. |
 | **Gemini** (Google) | Free tier available | `GEMINI_API_KEY` | Good quality, generous free tier. |
 | **GPT** (OpenAI) | ~$0.01/script | `OPENAI_API_KEY` | Solid alternative. |
+| **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline)** | Usage-based | `OPENAI_API_KEY` + `OPENAI_BASE_URL=https://api.atlascloud.ai/v1` | OpenAI-compatible. One key for 300+ LLMs **and** image/video gen. Set `--provider openai`. |
 | **Ollama** (local) | Free | Install Ollama + pull model | No API key needed. Quality varies by model. |
 | **Claude CLI** | Free w/ Max sub | Install Claude Code | Uses Claude Max subscription, no API key. |
 
@@ -242,7 +292,9 @@ All keys stored in `~/.verticals/config.json` with 0600 permissions:
 |----------|----------|---------|
 | `ANTHROPIC_API_KEY` | If using Claude | Script generation |
 | `GEMINI_API_KEY` | If using Gemini visuals/LLM | B roll + thumbnails |
-| `OPENAI_API_KEY` | If using GPT | Script generation |
+| `OPENAI_API_KEY` | If using GPT or an OpenAI-compatible gateway | Script generation |
+| `OPENAI_BASE_URL` | Optional | Point the `openai` provider at a compatible gateway, e.g. `https://api.atlascloud.ai/v1` for [Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline) |
+| `OPENAI_MODEL` | Optional | Model id for the `openai` provider (default `gpt-4o-mini`) |
 | `ELEVENLABS_API_KEY` | If using ElevenLabs | Premium voiceover |
 
 Environment variables override config file values.
