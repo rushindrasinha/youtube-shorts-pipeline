@@ -27,35 +27,39 @@ python -m verticals run --topic "Sam Altman just mass-fired 200 safety researche
 > ```bash
 > export OPENAI_BASE_URL="https://api.atlascloud.ai/v1"
 > export OPENAI_API_KEY="<your Atlas Cloud key>"
-> export OPENAI_MODEL="deepseek-ai/DeepSeek-V3-0324"   # or any LLM from the list below
+> export OPENAI_MODEL="deepseek-ai/deepseek-v4-pro"   # or any LLM from the list below
 > python -m verticals run --topic "your topic" --niche tech --provider openai
 > ```
+>
+> `deepseek-ai/deepseek-v4-pro` is a reasoning model — give it enough `max_tokens` (>= 512), otherwise the budget can be spent on the chain-of-thought and you get an empty `content` with `finish_reason=length`. (Verticals' script stage already requests a generous token budget.)
 >
 > Check out Atlas Cloud's coding plan for more budget-friendly API access: <https://www.atlascloud.ai/console/coding-plan>
 
 <details>
 <summary><strong>Atlas Cloud model catalog (LLM + image/video)</strong></summary>
 
-**LLM** (OpenAI-compatible, set as `OPENAI_MODEL`), a selection from the official list at <https://www.atlascloud.ai/zh/models/list/llm>:
+**LLM** (OpenAI-compatible, set as `OPENAI_MODEL`). Recommended default: `deepseek-ai/deepseek-v4-pro`. Full official list (59 models, synced with <https://www.atlascloud.ai/zh/models/list/llm>):
 
 - Anthropic (Claude): `anthropic/claude-haiku-4.5-20251001`, `anthropic/claude-opus-4.8`, `anthropic/claude-sonnet-4.6`
 - OpenAI (GPT): `openai/gpt-5.4`, `openai/gpt-5.5`
 - Google (Gemini): `google/gemini-3.1-flash-lite`, `google/gemini-3.1-pro-preview`, `google/gemini-3.5-flash`
-- DeepSeek: `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`, `deepseek-ai/deepseek-v3.2`
-- Qwen: `Qwen/Qwen3-235B-A22B-Instruct-2507`, `Qwen/Qwen3-Coder`, `qwen/qwen3-max-2026-01-23`
-- Moonshot (Kimi): `moonshotai/Kimi-K2-Instruct`, `moonshotai/Kimi-K2-Thinking`
-- Zhipu (GLM): `zai-org/GLM-4.6`, `zai-org/glm-5`
-- MiniMax: `MiniMaxAI/MiniMax-M2`
+- Alibaba (Qwen): `qwen/qwen2.5-7b-instruct`, `Qwen/Qwen3-235B-A22B-Instruct-2507`, `qwen/qwen3-235b-a22b-thinking-2507`, `qwen/qwen3-30b-a3b`, `Qwen/Qwen3-30B-A3B-Instruct-2507`, `qwen/qwen3-30b-a3b-thinking-2507`, `qwen/qwen3-32b`, `qwen/qwen3-8b`, `Qwen/Qwen3-Coder`, `qwen/qwen3-coder-next`, `qwen/qwen3-max-2026-01-23`, `Qwen/Qwen3-Next-80B-A3B-Instruct`, `Qwen/Qwen3-Next-80B-A3B-Thinking`, `Qwen/Qwen3-VL-235B-A22B-Instruct`, `qwen/qwen3-vl-235b-a22b-thinking`, `qwen/qwen3-vl-30b-a3b-instruct`, `qwen/qwen3-vl-30b-a3b-thinking`, `qwen/qwen3-vl-8b-instruct`, `qwen/qwen3.5-122b-a10b`, `qwen/qwen3.5-27b`, `qwen/qwen3.5-35b-a3b`, `qwen/qwen3.5-397b-a17b`, `qwen/qwen3.6-35b-a3b`, `qwen/qwen3.6-plus`
+- DeepSeek: `deepseek-ai/deepseek-ocr`, `deepseek-ai/deepseek-r1-0528`, `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`, `deepseek-ai/DeepSeek-V3.1-Terminus`, `deepseek-ai/deepseek-v3.2`, `deepseek-ai/DeepSeek-V3.2-Exp`, `deepseek-ai/deepseek-v4-flash`, `deepseek-ai/deepseek-v4-pro`
+- Moonshot (Kimi): `moonshotai/Kimi-K2-Instruct`, `moonshotai/Kimi-K2-Instruct-0905`, `moonshotai/Kimi-K2-Thinking`, `moonshotai/kimi-k2.5`, `moonshotai/kimi-k2.6`
+- Zhipu (GLM): `zai-org/GLM-4.6`, `zai-org/glm-4.7`, `zai-org/glm-5`, `zai-org/glm-5-turbo`, `zai-org/glm-5.1`, `zai-org/glm-5v-turbo`
+- MiniMax: `MiniMaxAI/MiniMax-M2`, `minimaxai/minimax-m2.1`, `minimaxai/minimax-m2.5`, `minimaxai/minimax-m2.7`
 - xAI: `xai/grok-4.3`
+- Kuaishou (KAT): `kwaipilot/kat-coder-pro-v2`
+- Other: `owl`
 
-**Image / video** (for b-roll, thumbnails, and future video stages):
+**Image / video** (for b-roll, thumbnails, and future video stages). Recommended defaults: image `openai/gpt-image-2/text-to-image`, video `bytedance/seedance-2.0/text-to-video`. A selection from the official model page at <https://www.atlascloud.ai/models>:
 
-- TEXT-TO-IMAGE: `alibaba/wan-2.7/text-to-image`, `qwen/qwen-image-2.0/text-to-image`, `openai/gpt-image-2/text-to-image`
-- IMAGE-TO-IMAGE: `alibaba/wan-2.7/image-edit`, `qwen/qwen-image-2.0/edit`, `openai/gpt-image-2/edit`
-- TEXT-TO-VIDEO: `bytedance/seedance-2.0-fast/text-to-video`, `alibaba/wan-2.7/text-to-video`, `google/veo3.1/text-to-video`
-- IMAGE-TO-VIDEO: `bytedance/seedance-2.0-fast/image-to-video`, `alibaba/wan-2.7/image-to-video`, `google/veo3.1/image-to-video`
+- TEXT-TO-IMAGE: `openai/gpt-image-2/text-to-image`, `alibaba/wan-2.7/text-to-image`, `qwen/qwen-image-2.0/text-to-image`, `bytedance/seedream-v4.5`, `google/imagen4`, `google/nano-banana/text-to-image`, `black-forest-labs/flux-2-pro/text-to-image`
+- IMAGE-TO-IMAGE: `openai/gpt-image-2/edit`, `alibaba/wan-2.7/image-edit`, `qwen/qwen-image-2.0/edit`, `bytedance/seedream-v4.5/edit`, `google/nano-banana/edit`, `black-forest-labs/flux-kontext-dev`
+- TEXT-TO-VIDEO: `bytedance/seedance-2.0/text-to-video`, `bytedance/seedance-2.0-fast/text-to-video`, `alibaba/wan-2.7/text-to-video`, `google/veo3.1/text-to-video`, `kwaivgi/kling-v3.0-pro/text-to-video`
+- IMAGE-TO-VIDEO: `bytedance/seedance-2.0/image-to-video`, `bytedance/seedance-2.0-fast/image-to-video`, `alibaba/wan-2.7/image-to-video`, `google/veo3.1/image-to-video`, `kwaivgi/kling-v3.0-pro/image-to-video`
 
-See the full catalog and docs at <https://www.atlascloud.ai/docs>.
+See the full catalog and docs at <https://www.atlascloud.ai/models> and <https://www.atlascloud.ai/docs>.
 
 </details>
 

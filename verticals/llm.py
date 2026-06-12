@@ -165,7 +165,7 @@ def _call_openai(prompt: str, max_tokens: int) -> str:
     Atlas Cloud example (single API for 300+ LLMs, OpenAI-compatible):
         OPENAI_BASE_URL=https://api.atlascloud.ai/v1
         OPENAI_API_KEY=<your Atlas Cloud key>
-        OPENAI_MODEL=deepseek-ai/DeepSeek-V3-0324
+        OPENAI_MODEL=deepseek-ai/deepseek-v4-pro   # reasoning model; needs max_tokens >= 512
     """
     import requests
 

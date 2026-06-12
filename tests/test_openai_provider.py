@@ -44,7 +44,7 @@ class TestOpenAICompatibleProvider:
         env = {
             "OPENAI_API_KEY": "sk-test",
             "OPENAI_BASE_URL": "https://api.atlascloud.ai/v1",
-            "OPENAI_MODEL": "deepseek-ai/DeepSeek-V3-0324",
+            "OPENAI_MODEL": "deepseek-ai/deepseek-v4-pro",
         }
         with patch.dict(os.environ, env, clear=False):
             with patch("verticals.config.load_config", return_value={}):
@@ -53,7 +53,7 @@ class TestOpenAICompatibleProvider:
 
                     assert _call_openai("hi", 100) == "ok"
         assert captured["url"] == "https://api.atlascloud.ai/v1/chat/completions"
-        assert captured["model"] == "deepseek-ai/DeepSeek-V3-0324"
+        assert captured["model"] == "deepseek-ai/deepseek-v4-pro"
 
     def test_trailing_slash_in_base_url_is_normalized(self):
         captured = {}
