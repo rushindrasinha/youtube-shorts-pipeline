@@ -12,6 +12,59 @@
 python -m verticals run --topic "Sam Altman just mass-fired 200 safety researchers" --niche tech
 ```
 
+---
+
+<p align="center">
+  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline">
+    <img src="./docs/atlas-cloud-logo.png" alt="Atlas Cloud" width="200">
+  </a>
+</p>
+
+> 🎁 **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline)** is a full-modal AI inference platform that gives developers a single AI API to access video generation, image generation, and LLM APIs. Instead of managing multiple vendor integrations, you connect once and get unified access to 300+ curated models across all modalities.
+>
+> This pipeline touches both halves of Atlas Cloud at once: the **script** stage needs an LLM, and the **visuals/thumbnail** stages need image generation. With Atlas Cloud you point both at one key. Its LLM endpoint is OpenAI-compatible, so the `openai` provider works out of the box:
+>
+> ```bash
+> export OPENAI_BASE_URL="https://api.atlascloud.ai/v1"
+> export OPENAI_API_KEY="<your Atlas Cloud key>"
+> export OPENAI_MODEL="deepseek-ai/deepseek-v4-pro"   # or any LLM from the list below
+> python -m verticals run --topic "your topic" --niche tech --provider openai
+> ```
+>
+> `deepseek-ai/deepseek-v4-pro` is a reasoning model — give it enough `max_tokens` (>= 512), otherwise the budget can be spent on the chain-of-thought and you get an empty `content` with `finish_reason=length`. (Verticals' script stage already requests a generous token budget.)
+>
+> Check out Atlas Cloud's coding plan for more budget-friendly API access: <https://www.atlascloud.ai/console/coding-plan>
+
+<details>
+<summary><strong>Atlas Cloud model catalog (LLM + image/video)</strong></summary>
+
+**LLM** (OpenAI-compatible, set as `OPENAI_MODEL`). Recommended default: `deepseek-ai/deepseek-v4-pro`. Full official list (59 models, synced with <https://www.atlascloud.ai/zh/models/list/llm>):
+
+- Anthropic (Claude): `anthropic/claude-haiku-4.5-20251001`, `anthropic/claude-opus-4.8`, `anthropic/claude-sonnet-4.6`
+- OpenAI (GPT): `openai/gpt-5.4`, `openai/gpt-5.5`
+- Google (Gemini): `google/gemini-3.1-flash-lite`, `google/gemini-3.1-pro-preview`, `google/gemini-3.5-flash`
+- Alibaba (Qwen): `qwen/qwen2.5-7b-instruct`, `Qwen/Qwen3-235B-A22B-Instruct-2507`, `qwen/qwen3-235b-a22b-thinking-2507`, `qwen/qwen3-30b-a3b`, `Qwen/Qwen3-30B-A3B-Instruct-2507`, `qwen/qwen3-30b-a3b-thinking-2507`, `qwen/qwen3-32b`, `qwen/qwen3-8b`, `Qwen/Qwen3-Coder`, `qwen/qwen3-coder-next`, `qwen/qwen3-max-2026-01-23`, `Qwen/Qwen3-Next-80B-A3B-Instruct`, `Qwen/Qwen3-Next-80B-A3B-Thinking`, `Qwen/Qwen3-VL-235B-A22B-Instruct`, `qwen/qwen3-vl-235b-a22b-thinking`, `qwen/qwen3-vl-30b-a3b-instruct`, `qwen/qwen3-vl-30b-a3b-thinking`, `qwen/qwen3-vl-8b-instruct`, `qwen/qwen3.5-122b-a10b`, `qwen/qwen3.5-27b`, `qwen/qwen3.5-35b-a3b`, `qwen/qwen3.5-397b-a17b`, `qwen/qwen3.6-35b-a3b`, `qwen/qwen3.6-plus`
+- DeepSeek: `deepseek-ai/deepseek-ocr`, `deepseek-ai/deepseek-r1-0528`, `deepseek-ai/DeepSeek-V3-0324`, `deepseek-ai/DeepSeek-V3.1`, `deepseek-ai/DeepSeek-V3.1-Terminus`, `deepseek-ai/deepseek-v3.2`, `deepseek-ai/DeepSeek-V3.2-Exp`, `deepseek-ai/deepseek-v4-flash`, `deepseek-ai/deepseek-v4-pro`
+- Moonshot (Kimi): `moonshotai/Kimi-K2-Instruct`, `moonshotai/Kimi-K2-Instruct-0905`, `moonshotai/Kimi-K2-Thinking`, `moonshotai/kimi-k2.5`, `moonshotai/kimi-k2.6`
+- Zhipu (GLM): `zai-org/GLM-4.6`, `zai-org/glm-4.7`, `zai-org/glm-5`, `zai-org/glm-5-turbo`, `zai-org/glm-5.1`, `zai-org/glm-5v-turbo`
+- MiniMax: `MiniMaxAI/MiniMax-M2`, `minimaxai/minimax-m2.1`, `minimaxai/minimax-m2.5`, `minimaxai/minimax-m2.7`
+- xAI: `xai/grok-4.3`
+- Kuaishou (KAT): `kwaipilot/kat-coder-pro-v2`
+- Other: `owl`
+
+**Image / video** (for b-roll, thumbnails, and future video stages). Recommended defaults: image `openai/gpt-image-2/text-to-image`, video `bytedance/seedance-2.0/text-to-video`. A selection from the official model page at <https://www.atlascloud.ai/models>:
+
+- TEXT-TO-IMAGE: `openai/gpt-image-2/text-to-image`, `alibaba/wan-2.7/text-to-image`, `qwen/qwen-image-2.0/text-to-image`, `bytedance/seedream-v4.5`, `google/imagen4`, `google/nano-banana/text-to-image`, `black-forest-labs/flux-2-pro/text-to-image`
+- IMAGE-TO-IMAGE: `openai/gpt-image-2/edit`, `alibaba/wan-2.7/image-edit`, `qwen/qwen-image-2.0/edit`, `bytedance/seedream-v4.5/edit`, `google/nano-banana/edit`, `black-forest-labs/flux-kontext-dev`
+- TEXT-TO-VIDEO: `bytedance/seedance-2.0/text-to-video`, `bytedance/seedance-2.0-fast/text-to-video`, `alibaba/wan-2.7/text-to-video`, `google/veo3.1/text-to-video`, `kwaivgi/kling-v3.0-pro/text-to-video`
+- IMAGE-TO-VIDEO: `bytedance/seedance-2.0/image-to-video`, `bytedance/seedance-2.0-fast/image-to-video`, `alibaba/wan-2.7/image-to-video`, `google/veo3.1/image-to-video`, `kwaivgi/kling-v3.0-pro/image-to-video`
+
+See the full catalog and docs at <https://www.atlascloud.ai/models> and <https://www.atlascloud.ai/docs>.
+
+</details>
+
+---
+
 That one command researches the topic, writes a hook driven script tuned to tech YouTube, generates cinematic b roll, records a natural voiceover, burns in animated captions, adds mood matched background music, generates a thumbnail, and uploads it to YouTube. ~90 seconds of video, ~3 minutes of wall time, ~$0.11 in API costs.
 
 ## What Changed in v3
@@ -201,6 +254,7 @@ python -m verticals topics --niche tech --limit 20
 | **Claude** (Anthropic) | ~$0.02/script | `ANTHROPIC_API_KEY` | Best quality. Default. |
 | **Gemini** (Google) | Free tier available | `GEMINI_API_KEY` | Good quality, generous free tier. |
 | **GPT** (OpenAI) | ~$0.01/script | `OPENAI_API_KEY` | Solid alternative. |
+| **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline)** | Usage-based | `OPENAI_API_KEY` + `OPENAI_BASE_URL=https://api.atlascloud.ai/v1` | OpenAI-compatible. One key for 300+ LLMs **and** image/video gen. Set `--provider openai`. |
 | **Ollama** (local) | Free | Install Ollama + pull model | No API key needed. Quality varies by model. |
 | **Claude CLI** | Free w/ Max sub | Install Claude Code | Uses Claude Max subscription, no API key. See [Claude authentication](#claude-authentication). |
 | **MiniMax** | Pay-as-you-go | `MINIMAX_API_KEY` | OpenAI-compatible API. |
@@ -261,7 +315,9 @@ All keys stored in `~/.verticals/config.json` with 0600 permissions:
 | `ANTHROPIC_API_KEY` | If using Claude API | Script generation |
 | `CLAUDE_CODE_OAUTH_TOKEN` | If using Claude CLI headless | Script generation (via `claude` CLI) |
 | `GEMINI_API_KEY` | If using Gemini visuals/LLM | B roll + thumbnails |
-| `OPENAI_API_KEY` | If using GPT | Script generation |
+| `OPENAI_API_KEY` | If using GPT or an OpenAI-compatible gateway | Script generation |
+| `OPENAI_BASE_URL` | Optional | Point the `openai` provider at a compatible gateway, e.g. `https://api.atlascloud.ai/v1` for [Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=youtube-shorts-pipeline) |
+| `OPENAI_MODEL` | Optional | Model id for the `openai` provider (default `gpt-4o-mini`) |
 | `ELEVENLABS_API_KEY` | If using ElevenLabs | Premium voiceover |
 | `MINIMAX_API_KEY` | If using MiniMax | Script generation + voiceover |
 | `SIXTYDB_API_KEY` | If using 60db | Voiceover |
