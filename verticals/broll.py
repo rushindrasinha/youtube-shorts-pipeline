@@ -1,4 +1,7 @@
 """Gemini Imagen b-roll generation + Ken Burns animation."""
+import urllib.parse as up
+import requests as rq
+import time
 
 import base64
 from pathlib import Path
@@ -13,41 +16,17 @@ from .retry import with_retry
 
 @with_retry(max_retries=3, base_delay=2.0)
 def _generate_image_gemini(prompt: str, output_path: Path, api_key: str):
-    """Generate image via Gemini native image generation (free tier compatible)."""
-    url = (
-        "https://generativelanguage.googleapis.com/v1beta"
-        "/models/gemini-2.0-flash-exp-image-generation:generateContent"
-    )
-    body = {
-        "contents": [{"parts": [{"text": f"Generate an image: {prompt}"}]}],
-        "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
-    }
-    r = requests.post(
-        url, json=body, timeout=90,
-        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-    )
+    """Generate image via Pollinations.ai instead of Gemini."""
+    import urllib.parse as up
+    encoded_prompt = up.quote(prompt)
+    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1920&nologo=true"
+    
+    r = requests.get(url, timeout=90)
     if r.status_code != 200:
-        try:
-            detail = r.json().get("error", {}).get("message", r.text[:200])
-        except Exception:
-            detail = r.text[:200]
-        hint = ""
-        if r.status_code == 403:
-            hint = (
-                " — check that GEMINI_API_KEY is set in this environment and is "
-                "an AI Studio key (https://aistudio.google.com/apikey), not a "
-                "Vertex AI / service-account credential"
-            )
-        raise RuntimeError(f"Gemini API {r.status_code}: {detail}{hint}")
-    data = r.json()
-    # Extract image from response parts
-    for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
-        if "inlineData" in part:
-            img_b64 = part["inlineData"]["data"]
-            output_path.write_bytes(base64.b64decode(img_b64))
-            return
-    raise RuntimeError("No image in Gemini response")
-
+        raise RuntimeError(f"Pollinations API failed with status code {r.status_code}")
+        
+    output_path.write_bytes(r.content)
+    time.sleep(16) # Rate limit protection pause
 
 def _fallback_frame(i: int, out_dir: Path) -> Path:
     """Solid colour fallback frame if Gemini fails."""
@@ -59,7 +38,8 @@ def _fallback_frame(i: int, out_dir: Path) -> Path:
 
 
 def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
-    """Generate 3 b-roll frames via Gemini Imagen, with fallback."""
+    api_key = "dummy_key_for_pollinations"
+    """Generate 3 b-roll frames via Gemini Imagen, with fallback.
     api_key = get_gemini_key()
     if not api_key:
         log(
@@ -68,7 +48,7 @@ def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
             "(must be an AI Studio key; Vertex AI / service-account credentials "
             "are rejected with a 403 'unregistered callers' error)."
         )
-        return [_fallback_frame(i, out_dir) for i in range(min(3, max(len(prompts), 1)))]
+        return [_fallback_frame(i, out_dir) for i in range(min(3, max(len(prompts), 1)))]"""
     frames = []
 
     for i, prompt in enumerate(prompts[:3]):

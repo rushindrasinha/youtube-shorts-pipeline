@@ -257,7 +257,7 @@ def _call_ollama(prompt: str) -> str:
     r = requests.post(
         "http://localhost:11434/api/generate",
         json={"model": model, "prompt": prompt, "stream": False},
-        timeout=120,
+        timeout=1800,
     )
     if r.status_code != 200:
         raise RuntimeError(f"Ollama {r.status_code}: {r.text[:300]}")
