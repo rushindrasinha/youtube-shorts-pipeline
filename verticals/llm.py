@@ -1,7 +1,7 @@
 """Multi-provider LLM abstraction.
 
-Supports: claude (Anthropic), gemini (Google), openai (OpenAI), ollama (local),
-litellm (100+ providers via unified SDK).
+Supports: claude (Anthropic), gemini (Google), openai (OpenAI), Atlas Cloud,
+ollama (local), litellm (100+ providers via unified SDK).
 Provider selection: --provider flag or LLM_PROVIDER env var or config.json.
 """
 
@@ -11,6 +11,7 @@ import os
 from .config import (
     get_anthropic_client,
     get_anthropic_key,
+    get_atlascloud_key,
     get_claude_backend,
     get_gemini_key,
     get_minimax_key,
@@ -45,6 +46,8 @@ def get_provider(name: str | None = None) -> str:
         return "gemini"
     if get_minimax_key():
         return "minimax"
+    if get_atlascloud_key():
+        return "atlascloud"
     if os.environ.get("OPENAI_API_KEY") or cfg.get("OPENAI_API_KEY"):
         return "openai"
     if _ollama_available():
@@ -57,7 +60,7 @@ def get_provider(name: str | None = None) -> str:
 
     raise RuntimeError(
         "No LLM provider found. Set one of:\n"
-        "  ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY\n"
+        "  ANTHROPIC_API_KEY, GEMINI_API_KEY, ATLASCLOUD_API_KEY, OPENAI_API_KEY\n"
         "  Or install Ollama with a model pulled\n"
         "  Or install Claude Code with a Max subscription"
     )
@@ -79,7 +82,7 @@ def call_llm(prompt: str, provider: str | None = None, max_tokens: int = 1500) -
 
     Args:
         prompt: The full prompt text.
-        provider: Provider name (claude, gemini, openai, ollama, claude_cli).
+        provider: Provider name (claude, gemini, openai, atlascloud, ollama, claude_cli).
         max_tokens: Maximum response tokens.
 
     Returns:
@@ -98,6 +101,8 @@ def call_llm(prompt: str, provider: str | None = None, max_tokens: int = 1500) -
         return _call_minimax(prompt, max_tokens)
     elif provider == "openai":
         return _call_openai(prompt, max_tokens)
+    elif provider in {"atlas", "atlascloud"}:
+        return _call_atlascloud(prompt, max_tokens)
     elif provider == "ollama":
         return _call_ollama(prompt)
     elif provider == "litellm":
@@ -217,6 +222,48 @@ def _call_openai(prompt: str, max_tokens: int) -> str:
     )
     if r.status_code != 200:
         raise RuntimeError(f"OpenAI API {r.status_code}: {r.text[:300]}")
+
+    data = r.json()
+    return data["choices"][0]["message"]["content"].strip()
+
+
+def _call_atlascloud(prompt: str, max_tokens: int) -> str:
+    """Call Atlas Cloud through its OpenAI-compatible API."""
+    import requests
+
+    from .config import load_config
+
+    api_key = get_atlascloud_key()
+    if not api_key:
+        raise RuntimeError("ATLASCLOUD_API_KEY not set")
+
+    cfg = load_config()
+    base_url = (
+        os.environ.get("ATLASCLOUD_BASE_URL")
+        or cfg.get("ATLASCLOUD_BASE_URL")
+        or "https://api.atlascloud.ai/v1"
+    ).rstrip("/")
+    model = (
+        os.environ.get("ATLASCLOUD_MODEL")
+        or cfg.get("ATLASCLOUD_MODEL")
+        or "deepseek-ai/deepseek-v4-pro"
+    )
+    r = requests.post(
+        f"{base_url}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": 0.7,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=60,
+    )
+    if r.status_code != 200:
+        raise RuntimeError(f"Atlas Cloud API {r.status_code}: {r.text[:300]}")
 
     data = r.json()
     return data["choices"][0]["message"]["content"].strip()
