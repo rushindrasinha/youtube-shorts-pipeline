@@ -93,6 +93,10 @@ def get_newsapi_key() -> str:
     return _get_key("NEWSAPI_KEY")
 
 
+def get_atlascloud_key() -> str:
+    return _get_key("ATLASCLOUD_API_KEY")
+
+
 # ─────────────────────────────────────────────────────
 # Niche → default topic source configuration
 # ─────────────────────────────────────────────────────

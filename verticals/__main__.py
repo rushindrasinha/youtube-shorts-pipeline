@@ -20,7 +20,7 @@ def maybe_run_setup(args):
         return
 
     provider = getattr(args, "provider", None)
-    if provider in {"ollama", "gemini", "openai"}:
+    if provider in {"ollama", "gemini", "openai", "atlas", "atlascloud"}:
         return
 
     print("  First run detected. Running setup...")
@@ -378,7 +378,7 @@ def main():
     p_draft.add_argument("--context", default="", help="Channel context")
     p_draft.add_argument("--niche", default="general", help=niche_help)
     p_draft.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
-    p_draft.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
+    p_draft.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, atlascloud, ollama")
     p_draft.add_argument("--discover", action="store_true", help="Use topic engine")
     p_draft.add_argument("--auto-pick", action="store_true", help="Let LLM pick the best topic")
     p_draft.add_argument("--dry-run", action="store_true", help="Draft only")
@@ -402,7 +402,7 @@ def main():
     p_run.add_argument("--topic", "--news", dest="news", required=False, help="Topic/news headline")
     p_run.add_argument("--niche", default="general", help=niche_help)
     p_run.add_argument("--platform", default="shorts", choices=["shorts", "reels", "tiktok", "all"])
-    p_run.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, ollama")
+    p_run.add_argument("--provider", default=None, help="LLM: claude, gemini, openai, atlascloud, ollama")
     p_run.add_argument("--voice", default=None, help="TTS: edge, elevenlabs, 60db, say")
     p_run.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
     p_run.add_argument("--dry-run", action="store_true")
