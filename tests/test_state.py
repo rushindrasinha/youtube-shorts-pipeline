@@ -83,4 +83,5 @@ class TestPipelineState:
     def test_stages_list(self):
         assert "research" in STAGES
         assert "upload" in STAGES
-        assert len(STAGES) == 10
+        assert "distribute" in STAGES
+        assert len(STAGES) == 11

@@ -7,7 +7,7 @@ from pathlib import Path
 # Ordered pipeline stages
 STAGES = [
     "research", "draft", "broll", "voiceover", "whisper",
-    "captions", "music", "assemble", "thumbnail", "upload",
+    "captions", "music", "assemble", "thumbnail", "upload", "distribute",
 ]
 
 

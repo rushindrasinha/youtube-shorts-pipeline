@@ -5,7 +5,7 @@ description: "AI-native vertical video engine with niche intelligence. Takes a o
 
 # Verticals v3
 
-AI-native vertical video engine: topic + niche -> research -> script -> visuals -> voice -> captions -> music -> thumbnail -> upload.
+AI-native vertical video engine: topic + niche -> research -> script -> visuals -> voice -> captions -> music -> thumbnail -> upload -> distribute (TikTok / Instagram / X and more).
 
 ## Commands
 

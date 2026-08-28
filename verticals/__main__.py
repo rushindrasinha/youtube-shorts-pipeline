@@ -241,6 +241,45 @@ def cmd_upload(args):
     return url
 
 
+def cmd_distribute(args):
+    """Publish an already-produced video to TikTok/Instagram/etc via Upload-Post."""
+    from .distribute import parse_platforms, publish_to_platforms
+    from .state import PipelineState
+    import json
+
+    draft_path = Path(args.draft)
+    draft = json.loads(draft_path.read_text())
+    lang = args.lang
+    state = PipelineState(draft)
+    force = getattr(args, "force", False)
+
+    video_path = Path(draft.get(f"video_{lang}", ""))
+    if not video_path.exists():
+        print(f"  No produced video found for lang={lang}. Run produce first.")
+        sys.exit(1)
+
+    platforms = parse_platforms(args.platforms)
+    if not platforms:
+        print("  No platforms given. Example: --platforms tiktok,instagram")
+        sys.exit(1)
+
+    if not force and state.is_done("distribute"):
+        request_id = state.get_artifact("distribute", "request_id", "")
+        log(f"Skipping distribute (already done): {request_id}")
+        return request_id
+
+    result = publish_to_platforms(
+        video_path, draft, platforms,
+        scheduled_date=getattr(args, "schedule", None),
+        timezone=getattr(args, "timezone", None),
+    )
+    request_id = result.get("request_id", "")
+    state.complete_stage("distribute", {"request_id": request_id, "platforms": platforms})
+    state.save(draft_path)
+    print(f"\n  Distributed to {', '.join(platforms)} (request_id={request_id})")
+    return request_id
+
+
 def cmd_run(args):
     draft_path = cmd_draft(args)
     if args.dry_run:
@@ -262,6 +301,19 @@ def cmd_run(args):
         force = False
 
     url = cmd_upload(UploadArgs())
+
+    platforms = getattr(args, "platforms", "")
+    if platforms:
+        class DistributeArgs:
+            draft = str(draft_path)
+            lang = args.lang
+            force = False
+            schedule = None
+            timezone = None
+
+        DistributeArgs.platforms = platforms
+        cmd_distribute(DistributeArgs())
+
     print(f"\n  Done! {url}")
 
 
@@ -397,6 +449,18 @@ def main():
     p_upload.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
     p_upload.add_argument("--force", action="store_true", help="Re-upload even if done")
 
+    # distribute (multi-platform via Upload-Post)
+    p_distribute = sub.add_parser(
+        "distribute", help="Publish a produced video to TikTok/Instagram/etc via Upload-Post")
+    p_distribute.add_argument("--draft", required=True)
+    p_distribute.add_argument(
+        "--platforms", required=True,
+        help="Comma-separated platforms, e.g. tiktok,instagram,youtube")
+    p_distribute.add_argument("--lang", default="en", choices=["en", "hi", "es", "pt", "de", "fr", "ja", "ko"])
+    p_distribute.add_argument("--schedule", default=None, help="ISO-8601 time to schedule, e.g. 2026-12-31T18:00:00Z")
+    p_distribute.add_argument("--timezone", default=None, help="IANA timezone for --schedule (default UTC)")
+    p_distribute.add_argument("--force", action="store_true", help="Re-distribute even if done")
+
     # run (full pipeline)
     p_run = sub.add_parser("run", help="Full pipeline: draft -> produce -> upload")
     p_run.add_argument("--topic", "--news", dest="news", required=False, help="Topic/news headline")
@@ -409,6 +473,9 @@ def main():
     p_run.add_argument("--context", default="")
     p_run.add_argument("--discover", action="store_true")
     p_run.add_argument("--auto-pick", action="store_true")
+    p_run.add_argument(
+        "--platforms", default="",
+        help="Also distribute via Upload-Post, e.g. tiktok,instagram")
 
     # topics
     p_topics = sub.add_parser("topics", help="Discover trending topics")
@@ -473,6 +540,8 @@ def main():
         cmd_produce(args)
     elif args.cmd == "upload":
         cmd_upload(args)
+    elif args.cmd == "distribute":
+        cmd_distribute(args)
     elif args.cmd == "run":
         cmd_run(args)
     elif args.cmd == "topics":

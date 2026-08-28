@@ -93,6 +93,15 @@ def get_newsapi_key() -> str:
     return _get_key("NEWSAPI_KEY")
 
 
+def get_uploadpost_key() -> str:
+    return _get_key("UPLOADPOST_API_KEY")
+
+
+def get_uploadpost_user() -> str:
+    """Upload-Post profile that owns the connected social accounts."""
+    return _get_key("UPLOADPOST_USER")
+
+
 # ─────────────────────────────────────────────────────
 # Niche → default topic source configuration
 # ─────────────────────────────────────────────────────
