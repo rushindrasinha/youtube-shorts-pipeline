@@ -177,6 +177,7 @@ python -m verticals run --discover --niche gaming --auto-pick
 python -m verticals draft --topic "headline" --niche tech
 python -m verticals produce --draft <path> --lang en
 python -m verticals upload --draft <path> --lang en
+python -m verticals distribute --draft <path> --platforms tiktok,instagram
 python -m verticals topics --niche tech --limit 20
 ```
 
@@ -189,6 +190,7 @@ python -m verticals topics --niche tech --limit 20
 --lang CODE          Language: en, hi, es, pt, de, fr, ja, ko (default: en)
 --dry-run            Draft only, skip produce and upload
 --force              Redo all stages even if completed
+--platforms LIST    Also distribute via Upload-Post, e.g. tiktok,instagram
 --verbose            Debug logging
 ```
 
@@ -235,9 +237,33 @@ The `claude` provider works with any one of these, checked in order:
 | Platform | Status | Auth |
 |----------|--------|------|
 | **YouTube** | Stable | OAuth (setup wizard) |
-| **TikTok** | v3.1 | Coming soon |
-| **Instagram Reels** | v3.1 | Coming soon |
-| **X (Twitter)** | v3.1 | Coming soon |
+| **TikTok** | Stable | Upload-Post API key |
+| **Instagram Reels** | Stable | Upload-Post API key |
+| **X (Twitter)** | Stable | Upload-Post API key |
+| **Facebook, LinkedIn, Threads, Pinterest, Bluesky, Reddit, Telegram, Discord, Google Business** | Stable | Upload-Post API key |
+
+Two independent paths:
+
+- `upload` publishes to YouTube through the YouTube Data API with your own OAuth client.
+- `distribute` publishes the same rendered video to any of the platforms above through
+  [Upload-Post](https://upload-post.com) — one API key, no per-platform OAuth client to
+  register, and no Google audit needed to publish public (an unaudited YouTube Data API
+  project force-locks uploads to `private`).
+
+```bash
+# Publish an already-produced video everywhere at once
+python -m verticals distribute --draft <path> --platforms tiktok,instagram,youtube
+
+# Or as part of the full pipeline
+python -m verticals run --topic "headline" --niche tech --platforms tiktok,instagram
+
+# Schedule instead of publishing now
+python -m verticals distribute --draft <path> --platforms tiktok \
+  --schedule 2026-12-31T18:00:00Z --timezone Europe/Madrid
+```
+
+Per-platform copy the drafting stage already writes (`instagram_caption`, `tiktok_caption`)
+is reused automatically as that platform's caption.
 
 ## $0.00 Mode (completely free)
 
@@ -265,6 +291,8 @@ All keys stored in `~/.verticals/config.json` with 0600 permissions:
 | `ELEVENLABS_API_KEY` | If using ElevenLabs | Premium voiceover |
 | `MINIMAX_API_KEY` | If using MiniMax | Script generation + voiceover |
 | `SIXTYDB_API_KEY` | If using 60db | Voiceover |
+| `UPLOADPOST_API_KEY` | If distributing beyond YouTube | Multi-platform publishing |
+| `UPLOADPOST_USER` | If distributing beyond YouTube | Upload-Post profile name |
 
 Environment variables override config file values.
 

@@ -113,8 +113,11 @@ python3 -m verticals draft --topic "your topic here"
 # Produce (generate video from draft)
 python3 -m verticals produce --draft ~/.verticals/drafts/<id>.json
 
-# Upload
+# Upload (YouTube, via your own OAuth client)
 python3 -m verticals upload --draft ~/.verticals/drafts/<id>.json
+
+# Distribute (TikTok / Instagram / X / ... via Upload-Post)
+python3 -m verticals distribute --draft ~/.verticals/drafts/<id>.json --platforms tiktok,instagram
 
 # Full pipeline in one command
 python3 -m verticals run --topic "your topic here"
@@ -130,9 +133,16 @@ Keys are stored in `~/.verticals/config.json`:
 {
   "ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_KEY_HERE",
   "ELEVENLABS_API_KEY": "YOUR_ELEVENLABS_KEY_HERE",
-  "GEMINI_API_KEY": "YOUR_GEMINI_KEY_HERE"
+  "GEMINI_API_KEY": "YOUR_GEMINI_KEY_HERE",
+  "UPLOADPOST_API_KEY": "YOUR_UPLOADPOST_KEY_HERE",
+  "UPLOADPOST_USER": "your-upload-post-profile"
 }
 ```
+
+`UPLOADPOST_*` is only needed for `distribute` (publishing beyond YouTube). Create a free
+account at [upload-post.com](https://upload-post.com), connect the social accounts once in
+the dashboard, and copy the API key and profile name here. Publishing to YouTube with
+`upload` does not need it.
 
 > This file is created with `0600` permissions (owner read/write only). It is listed in `.gitignore` and should never be committed to version control.
 
