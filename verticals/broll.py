@@ -1,56 +1,47 @@
-"""Gemini Imagen b-roll generation + Ken Burns animation."""
+"""Pollinations b-roll generation + Ken Burns animation."""
 
-import base64
+import time
+import urllib.parse
 from pathlib import Path
 
 import requests
 from PIL import Image
 
-from .config import VIDEO_WIDTH, VIDEO_HEIGHT, get_gemini_key, run_cmd
+from .config import VIDEO_WIDTH, VIDEO_HEIGHT, run_cmd
 from .log import log
 from .retry import with_retry
 
+# Pause between Pollinations requests: the free tier rate-limits
+# rapid-fire image generation, so frames are spaced out instead of
+# hammering the endpoint.
+POLLINATIONS_RATE_LIMIT_DELAY_S = 16
+
 
 @with_retry(max_retries=3, base_delay=2.0)
-def _generate_image_gemini(prompt: str, output_path: Path, api_key: str):
-    """Generate image via Gemini native image generation (free tier compatible)."""
+def _generate_image_pollinations(prompt: str, output_path: Path):
+    """Generate an image via Pollinations.ai — free, no API key needed."""
+    encoded_prompt = urllib.parse.quote(prompt, safe="")
     url = (
-        "https://generativelanguage.googleapis.com/v1beta"
-        "/models/gemini-2.0-flash-exp-image-generation:generateContent"
+        f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+        "?width=1080&height=1920&nologo=true"
     )
-    body = {
-        "contents": [{"parts": [{"text": f"Generate an image: {prompt}"}]}],
-        "generationConfig": {"responseModalities": ["IMAGE", "TEXT"]},
-    }
-    r = requests.post(
-        url, json=body, timeout=90,
-        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-    )
+    r = requests.get(url, timeout=90)
     if r.status_code != 200:
-        try:
-            detail = r.json().get("error", {}).get("message", r.text[:200])
-        except Exception:
-            detail = r.text[:200]
-        hint = ""
-        if r.status_code == 403:
-            hint = (
-                " — check that GEMINI_API_KEY is set in this environment and is "
-                "an AI Studio key (https://aistudio.google.com/apikey), not a "
-                "Vertex AI / service-account credential"
-            )
-        raise RuntimeError(f"Gemini API {r.status_code}: {detail}{hint}")
-    data = r.json()
-    # Extract image from response parts
-    for part in data.get("candidates", [{}])[0].get("content", {}).get("parts", []):
-        if "inlineData" in part:
-            img_b64 = part["inlineData"]["data"]
-            output_path.write_bytes(base64.b64decode(img_b64))
-            return
-    raise RuntimeError("No image in Gemini response")
+        raise RuntimeError(
+            f"Pollinations API {r.status_code}: {r.text[:200]}"
+        )
+    content_type = r.headers.get("Content-Type", "")
+    if content_type and not content_type.startswith("image/"):
+        raise RuntimeError(
+            f"Pollinations returned non-image content "
+            f"({content_type}): {r.text[:200]}"
+        )
+    output_path.write_bytes(r.content)
+    time.sleep(POLLINATIONS_RATE_LIMIT_DELAY_S)
 
 
 def _fallback_frame(i: int, out_dir: Path) -> Path:
-    """Solid colour fallback frame if Gemini fails."""
+    """Solid colour fallback frame if image generation fails."""
     colors = [(20, 20, 60), (40, 10, 40), (10, 30, 50)]
     img = Image.new("RGB", (VIDEO_WIDTH, VIDEO_HEIGHT), colors[i % len(colors)])
     path = out_dir / f"broll_{i}.png"
@@ -59,24 +50,19 @@ def _fallback_frame(i: int, out_dir: Path) -> Path:
 
 
 def generate_broll(prompts: list, out_dir: Path) -> list[Path]:
-    """Generate 3 b-roll frames via Gemini Imagen, with fallback."""
-    api_key = get_gemini_key()
-    if not api_key:
-        log(
-            "GEMINI_API_KEY not set — using solid-color fallback frames. "
-            "Get an AI Studio key at https://aistudio.google.com/apikey "
-            "(must be an AI Studio key; Vertex AI / service-account credentials "
-            "are rejected with a 403 'unregistered callers' error)."
-        )
-        return [_fallback_frame(i, out_dir) for i in range(min(3, max(len(prompts), 1)))]
+    """Generate 3 b-roll frames via Pollinations, with fallback.
+
+    Pollinations is free with no API key, so no key is required —
+    a frame that fails to generate falls back to a solid-colour frame.
+    """
     frames = []
 
     for i, prompt in enumerate(prompts[:3]):
         out_path = out_dir / f"broll_{i}.png"
-        log(f"Generating b-roll frame {i+1}/3 via Gemini Imagen...")
+        log(f"Generating b-roll frame {i+1}/3 via Pollinations...")
 
         try:
-            _generate_image_gemini(prompt, out_path, api_key)
+            _generate_image_pollinations(prompt, out_path)
 
             # Resize/crop to 9:16 portrait
             img = Image.open(out_path).convert("RGB")
